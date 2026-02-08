@@ -45,10 +45,10 @@
 /* ---------- SUPABASE SETUP ---------- */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* ---------- HARD AUTH LOCK ---------- */
+/* ---------- AUTH LOCK ---------- */
 (async () => {
   const { data } = await supabaseClient.auth.getSession();
   if (!data.session) {
@@ -58,7 +58,7 @@ const supabaseClient = supabase.createClient(
   document.body.style.display = "block";
 })();
 
-/* ---------- REGISTER FUNCTION ---------- */
+/* ---------- REGISTER ---------- */
 async function register() {
   const nameInput = document.getElementById("name");
   const emailInput = document.getElementById("email");
@@ -71,21 +71,23 @@ async function register() {
   msg.innerText = "";
   qrBox.innerHTML = "";
 
-  // 🚫 Prevent empty / null values forever
   if (!nameVal || !emailVal) {
     msg.innerText = "❌ Name and Email are mandatory";
     return;
   }
 
+  // 🔐 PURE UUID (ONLY THIS)
+  const qrUUID = crypto.randomUUID();
+
   const { data: userData } = await supabaseClient.auth.getUser();
-  const qr = crypto.randomUUID();
 
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
       name: nameVal,
       email: emailVal,
-      qr: qr,
+      qr: qrUUID,          // ✅ DB stores UUID only
+      status: "PENDING",
       checked_in: false,
       created_by: userData.user.email
     });
@@ -97,13 +99,13 @@ async function register() {
 
   msg.innerText = "✅ Registration successful";
 
+  // ✅ QR encodes ONLY UUID (scanner-friendly)
   new QRCode(qrBox, {
-    text: qr,
+    text: qrUUID,
     width: 200,
     height: 200
   });
 
-  // Optional: clear inputs
   nameInput.value = "";
   emailInput.value = "";
 }
