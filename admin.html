@@ -32,7 +32,12 @@ fetch(`${SUPABASE_URL}/rest/v1/attendees`, {
 .then(data => {
   const list = document.getElementById("list");
   data.forEach(a => {
-    list.innerHTML += `<li>${a.name} - ${a.checked_in ? "✔️" : "❌"}</li>`;
+    list.innerHTML += `
+      <li>
+        <b>${a.name}</b><br>
+        Created by: ${a.created_by}<br>
+        Status: ${a.checked_in ? "✔️ Checked In" : "❌ Not Checked In"}
+      </li>;
   });
 });
 </script>
