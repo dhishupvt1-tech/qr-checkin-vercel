@@ -3,10 +3,7 @@
 <head>
   <title>Register</title>
 
-  <!-- Supabase v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-  <!-- QR Generator -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 </head>
 
@@ -25,20 +22,19 @@
 <div id="qrcode"></div>
 
 <script>
-  /* ✅ CREATE SUPABASE CLIENT (ONLY ONCE) */
   const supabaseClient = supabase.createClient(
     "https://qwumwbmystwwhsjpllqn.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
   );
 
-  /* ✅ LOCK PAGE (LOGIN REQUIRED) */
+  // 🔒 LOCK PAGE + REMEMBER REDIRECT
   supabaseClient.auth.getUser().then(({ data }) => {
     if (!data.user) {
+      localStorage.setItem("redirectAfterLogin", "register.html");
       window.location.href = "login.html";
     }
   });
 
-  /* ✅ REGISTER LOGIC */
   document.getElementById("registerBtn").addEventListener("click", async () => {
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
@@ -54,8 +50,6 @@
     }
 
     const qr = crypto.randomUUID();
-
-    // get logged-in user
     const { data } = await supabaseClient.auth.getUser();
 
     const { error } = await supabaseClient
