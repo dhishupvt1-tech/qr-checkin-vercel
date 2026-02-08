@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Dashboard</title>
+  <title>Admin</title>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>body{display:none}</style>
+  <script src="authGuard.js"></script>
 </head>
 <body>
 
@@ -19,28 +20,15 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-// AUTH LOCK
-(async () => {
-  const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) window.location.href = "login.html";
-  document.body.style.display = "block";
-})();
+await requireAuth(supabaseClient);
 
-(async () => {
-  const { data } = await supabaseClient
-    .from("attendees")
-    .select("*")
-    .order("id", { ascending:false });
+const { data } = await supabaseClient.from("attendees").select("*");
 
-  data.forEach(a => {
-    list.innerHTML += `
-      <li>
-        <b>${a.name}</b> |
-        ${a.created_by} |
-        ${a.checked_in ? "✔️" : "❌"}
-      </li>`;
-  });
-})();
+data.forEach(a => {
+  list.innerHTML += `
+    <li>${a.name} | ${a.email} | ${a.status}</li>
+  `;
+});
 
 async function logout() {
   await supabaseClient.auth.signOut();
