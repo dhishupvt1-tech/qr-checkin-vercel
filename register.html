@@ -2,11 +2,10 @@
 <html>
 <head>
   <title>Register</title>
-
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <style>body{display:none}</style>
 </head>
-
 <body>
 
 <h2>Registration</h2>
@@ -16,65 +15,48 @@
 <input id="email" placeholder="Email">
 <br><br>
 
-<button id="registerBtn">Register</button>
-
+<button onclick="register()">Register</button>
 <p id="msg"></p>
 <div id="qrcode"></div>
 
 <script>
-  const supabaseClient = supabase.createClient(
-    "https://qwumwbmystwwhsjpllqn.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
-  );
+const supabaseClient = supabase.createClient(
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+);
 
-  // 🔒 LOCK PAGE + REMEMBER REDIRECT
-  supabaseClient.auth.getUser().then(({ data }) => {
-    if (!data.user) {
-      localStorage.setItem("redirectAfterLogin", "register.html");
-      window.location.href = "login.html";
-    }
-  });
+// HARD AUTH BLOCK
+(async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+  }
+  document.body.style.display = "block";
+})();
 
-  document.getElementById("registerBtn").addEventListener("click", async () => {
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-    const msg = document.getElementById("msg");
-    const qrDiv = document.getElementById("qrcode");
+async function register() {
+  const { data } = await supabaseClient.auth.getUser();
+  const qr = crypto.randomUUID();
 
-    msg.innerText = "";
-    qrDiv.innerHTML = "";
-
-    if (!name || !email) {
-      msg.innerText = "Please fill all fields";
-      return;
-    }
-
-    const qr = crypto.randomUUID();
-    const { data } = await supabaseClient.auth.getUser();
-
-    const { error } = await supabaseClient
-      .from("attendees")
-      .insert({
-        name,
-        email,
-        qr,
-        checked_in: false,
-        created_by: data.user.email
-      });
-
-    if (error) {
-      msg.innerText = error.message;
-      return;
-    }
-
-    msg.innerText = "Registration successful";
-
-    new QRCode(qrDiv, {
-      text: qr,
-      width: 200,
-      height: 200
+  const { error } = await supabaseClient
+    .from("attendees")
+    .insert({
+      name: name.value,
+      email: email.value,
+      qr,
+      checked_in: false,
+      created_by: data.user.email
     });
-  });
+
+  if (error) {
+    msg.innerText = error.message;
+    return;
+  }
+
+  msg.innerText = "Registration successful";
+  qrcode.innerHTML = "";
+  new QRCode(qrcode, qr);
+}
 </script>
 
 </body>
