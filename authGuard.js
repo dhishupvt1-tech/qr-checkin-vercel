@@ -1,12 +1,11 @@
-<script>
+// authGuard.js
 async function requireAuth(supabaseClient) {
-  const { data } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.auth.getSession();
 
-  if (!data.session) {
+  if (error || !data.session) {
     window.location.href = "login.html";
     return null;
   }
 
   return data.session.user;
 }
-</script>
