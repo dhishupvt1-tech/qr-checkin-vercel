@@ -26,9 +26,6 @@
     .error {
       color: red;
     }
-    .success {
-      color: green;
-    }
   </style>
 </head>
 
@@ -56,7 +53,7 @@
 /* ================== SUPABASE INIT ================== */
 const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
 const SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
 
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
@@ -74,7 +71,7 @@ const supabaseClient = supabase.createClient(
   loadAttendees();
 })();
 
-/* ================== LOAD DATA ================== */
+/* ================== LOAD ATTENDEES ================== */
 async function loadAttendees() {
   const status = document.getElementById("status");
   const table = document.getElementById("table");
@@ -82,8 +79,7 @@ async function loadAttendees() {
 
   const { data, error } = await supabaseClient
     .from("attendees")
-    .select("name, email, status, created_by")
-    .order("created_at", { ascending: false });
+    .select("name, email, status, created_by");
 
   if (error) {
     status.innerHTML = `<span class="error">❌ ${error.message}</span>`;
@@ -91,7 +87,7 @@ async function loadAttendees() {
   }
 
   if (!data || data.length === 0) {
-    status.innerHTML = "⚠️ No registrations found";
+    status.innerText = "⚠️ No registrations found";
     return;
   }
 
