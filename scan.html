@@ -3,10 +3,7 @@
 <head>
   <title>QR Scan</title>
 
-  <!-- Supabase v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-  <!-- QR Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 
@@ -18,15 +15,15 @@
 <p id="status"></p>
 
 <script>
-  /* ✅ CREATE SUPABASE CLIENT (ONLY ONCE) */
   const supabaseClient = supabase.createClient(
     "https://qwumwbmystwwhsjpllqn.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
   );
 
-  /* ✅ LOCK PAGE */
+  // 🔒 LOCK PAGE + REMEMBER REDIRECT
   supabaseClient.auth.getUser().then(({ data }) => {
     if (!data.user) {
+      localStorage.setItem("redirectAfterLogin", "scan.html");
       window.location.href = "login.html";
     }
   });
@@ -36,7 +33,6 @@
   async function onScanSuccess(qrText) {
     status.innerText = "Checking...";
 
-    // get attendee
     const { data, error } = await supabaseClient
       .from("attendees")
       .select("*")
@@ -53,7 +49,6 @@
       return;
     }
 
-    // update check-in
     await supabaseClient
       .from("attendees")
       .update({
