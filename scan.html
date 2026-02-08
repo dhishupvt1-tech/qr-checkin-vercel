@@ -1,70 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>QR Scan</title>
-
+  <title>Scan</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>body{display:none}</style>
 </head>
-
 <body>
 
-<h2>QR Check-In</h2>
-
-<div id="reader" style="width:300px"></div>
+<h2>Scan QR</h2>
+<div id="reader"></div>
 <p id="status"></p>
 
 <script>
-  const supabaseClient = supabase.createClient(
-    "https://qwumwbmystwwhsjpllqn.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
-  );
+const supabaseClient = supabase.createClient(
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+);
 
-  // 🔒 LOCK PAGE + REMEMBER REDIRECT
-  supabaseClient.auth.getUser().then(({ data }) => {
-    if (!data.user) {
-      localStorage.setItem("redirectAfterLogin", "scan.html");
-      window.location.href = "login.html";
-    }
-  });
+// HARD AUTH BLOCK
+(async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+  }
+  document.body.style.display = "block";
+})();
 
-  const status = document.getElementById("status");
+async function onScan(qr) {
+  const { data } = await supabaseClient
+    .from("attendees")
+    .select("*")
+    .eq("qr", qr)
+    .single();
 
-  async function onScanSuccess(qrText) {
-    status.innerText = "Checking...";
-
-    const { data, error } = await supabaseClient
-      .from("attendees")
-      .select("*")
-      .eq("qr", qrText)
-      .single();
-
-    if (error || !data) {
-      status.innerText = "❌ Invalid QR";
-      return;
-    }
-
-    if (data.checked_in) {
-      status.innerText = "❌ Already Checked In";
-      return;
-    }
-
-    await supabaseClient
-      .from("attendees")
-      .update({
-        checked_in: true,
-        checked_in_at: new Date()
-      })
-      .eq("id", data.id);
-
-    status.innerText = "✅ Check-In Successful";
+  if (!data) {
+    status.innerText = "Invalid QR";
+    return;
   }
 
-  new Html5Qrcode("reader").start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    onScanSuccess
-  );
+  if (data.checked_in) {
+    status.innerText = "Already checked in";
+    return;
+  }
+
+  await supabaseClient
+    .from("attendees")
+    .update({ checked_in: true })
+    .eq("id", data.id);
+
+  status.innerText = "Check-in successful";
+}
+
+new Html5Qrcode("reader").start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  onScan
+);
 </script>
 
 </body>
