@@ -10,26 +10,14 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    #loader {
-      padding: 20px;
-      font-size: 16px;
-    }
-    .hidden {
-      display: none;
-    }
+    body { font-family: Arial, sans-serif; }
     .card {
       border: 1px solid #ccc;
       padding: 15px;
       margin-top: 15px;
       width: 320px;
     }
-    button {
-      padding: 8px 14px;
-      margin: 6px 4px 0 0;
-    }
+    button { padding: 8px 14px; margin: 6px 4px 0 0; }
     .success { color: green; }
     .error { color: red; }
   </style>
@@ -37,18 +25,12 @@
 
 <body>
 
-<div id="loader">🔐 Checking session...</div>
+<h2>QR Entry Scan</h2>
+<button onclick="logout()">Logout</button>
+<hr>
 
-<div id="app" class="hidden">
-
-  <h2>QR Entry Scan</h2>
-  <button onclick="logout()">Logout</button>
-  <hr>
-
-  <div id="reader" style="width:300px"></div>
-  <div id="result"></div>
-
-</div>
+<div id="reader" style="width:300px"></div>
+<div id="result"></div>
 
 <script>
 /* ---------- SUPABASE SETUP ---------- */
@@ -57,48 +39,25 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-const loader = document.getElementById("loader");
-const app = document.getElementById("app");
-const resultDiv = document.getElementById("result");
-
-let currentAttendee = null;
-let scanLocked = false;
-
-/* ---------- AUTH CHECK ---------- */
+/* ---------- AUTH LOCK ---------- */
 (async () => {
-  try {
-    const { data, error } = await supabaseClient.auth.getSession();
-
-    if (error || !data.session) {
-      window.location.href = "login.html";
-      return;
-    }
-
-    loader.classList.add("hidden");
-    app.classList.remove("hidden");
-
-    startScanner();
-
-  } catch (err) {
-    loader.innerHTML = "❌ Error loading page. Check console.";
-    console.error(err);
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+    return;
   }
 })();
 
-/* ---------- START SCANNER ---------- */
-function startScanner() {
-  try {
-    const scanner = new Html5Qrcode("reader");
+const resultDiv = document.getElementById("result");
+let currentAttendee = null;
+let scanLocked = false;
 
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onScanSuccess
-    );
-  } catch (e) {
-    resultDiv.innerHTML = `<p class="error">Camera failed to start</p>`;
-    console.error(e);
-  }
+/* ---------- UUID EXTRACTOR ---------- */
+function extractUUID(text) {
+  const match = text.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+  );
+  return match ? match[0] : null;
 }
 
 /* ---------- SCAN HANDLER ---------- */
@@ -106,30 +65,37 @@ async function onScanSuccess(qrText) {
   if (scanLocked) return;
   scanLocked = true;
 
-  const cleanQR = qrText.trim();
-  resultDiv.innerHTML = "🔍 Checking QR...";
+  const uuid = extractUUID(qrText);
+
+  if (!uuid) {
+    resultDiv.innerHTML = `<p class="error">❌ Invalid QR format</p>`;
+    unlock();
+    return;
+  }
+
+  resultDiv.innerHTML = "🔍 Checking entry...";
 
   const { data, error } = await supabaseClient
     .from("attendees")
     .select("*")
-    .eq("qr", cleanQR)
+    .eq("qr", uuid)
     .single();
 
   if (error || !data) {
-    resultDiv.innerHTML = `<p class="error">❌ Invalid QR Code</p>`;
-    unlockScan();
+    resultDiv.innerHTML = `<p class="error">❌ QR not found</p>`;
+    unlock();
     return;
   }
 
   if (data.status === "CHECKED_IN") {
     resultDiv.innerHTML = `<p class="error">⚠️ Already Checked In</p>`;
-    unlockScan();
+    unlock();
     return;
   }
 
   if (data.status === "REJECTED") {
     resultDiv.innerHTML = `<p class="error">❌ Entry Rejected</p>`;
-    unlockScan();
+    unlock();
     return;
   }
 
@@ -139,21 +105,18 @@ async function onScanSuccess(qrText) {
     <div class="card">
       <b>Name:</b> ${data.name}<br>
       <b>Email:</b> ${data.email}<br>
-      <b>Registered By:</b> ${data.created_by}<br>
-      <b>Status:</b> ${data.status}<br><br>
+      <b>Registered By:</b> ${data.created_by}<br><br>
 
       <button onclick="checkIn()">✅ Check In</button>
       <button onclick="rejectEntry()">❌ Reject Entry</button>
     </div>
   `;
 
-  unlockScan();
+  unlock();
 }
 
 /* ---------- CHECK IN ---------- */
 async function checkIn() {
-  if (!currentAttendee) return;
-
   await supabaseClient
     .from("attendees")
     .update({
@@ -169,8 +132,6 @@ async function checkIn() {
 
 /* ---------- REJECT ---------- */
 async function rejectEntry() {
-  if (!currentAttendee) return;
-
   await supabaseClient
     .from("attendees")
     .update({ status: "REJECTED" })
@@ -181,9 +142,16 @@ async function rejectEntry() {
 }
 
 /* ---------- UNLOCK ---------- */
-function unlockScan() {
+function unlock() {
   setTimeout(() => scanLocked = false, 2000);
 }
+
+/* ---------- START SCANNER ---------- */
+new Html5Qrcode("reader").start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  onScanSuccess
+);
 
 /* ---------- LOGOUT ---------- */
 async function logout() {
