@@ -8,12 +8,10 @@
 
 <h2>Login</h2>
 
-<input id="email" placeholder="Email">
-<br><br>
-<input id="password" type="password" placeholder="Password">
-<br><br>
-
+<input id="email" placeholder="Email"><br><br>
+<input id="password" type="password" placeholder="Password"><br><br>
 <button onclick="login()">Login</button>
+
 <p id="msg"></p>
 
 <script>
@@ -35,7 +33,6 @@ async function login() {
     return;
   }
 
-  // 🔒 ONLY redirect AFTER successful login
   window.location.href = "register.html";
 }
 </script>
