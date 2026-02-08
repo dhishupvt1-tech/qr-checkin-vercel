@@ -2,71 +2,50 @@
 <html>
 <head>
   <title>Admin Dashboard</title>
-
-  <!-- Supabase v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-  <style>
-    body { display: none; font-family: Arial, sans-serif; }
-    li { margin-bottom: 10px; }
-  </style>
+  <style>body{display:none}</style>
 </head>
-
 <body>
 
-<h2>Admin Dashboard – Attendees</h2>
+<h2>Admin Dashboard</h2>
+<button onclick="logout()">Logout</button>
+<hr>
 
 <ul id="list"></ul>
 
 <script>
-/* ---------------- SUPABASE SETUP ---------------- */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* ---------------- HARD AUTH BLOCK ---------------- */
+// AUTH LOCK
 (async () => {
   const { data } = await supabaseClient.auth.getSession();
-
-  if (!data.session) {
-    window.location.href = "login.html";
-    return;
-  }
-
+  if (!data.session) window.location.href = "login.html";
   document.body.style.display = "block";
 })();
 
-/* ---------------- LOAD ATTENDEES ---------------- */
 (async () => {
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("attendees")
     .select("*")
-    .order("id", { ascending: false });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  const list = document.getElementById("list");
-  list.innerHTML = "";
+    .order("id", { ascending:false });
 
   data.forEach(a => {
-    const name = a.name && a.name.trim() ? a.name : "⚠️ Name not provided";
-    const createdBy = a.created_by || "Unknown user";
-    const status = a.checked_in ? "✔️ Checked In" : "❌ Not Checked In";
-
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <b>${name}</b><br>
-      Created by: ${createdBy}<br>
-      Status: ${status}
-      <hr>
-    `;
-    list.appendChild(li);
+    list.innerHTML += `
+      <li>
+        <b>${a.name}</b> |
+        ${a.created_by} |
+        ${a.checked_in ? "✔️" : "❌"}
+      </li>`;
   });
 })();
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
+}
 </script>
 
 </body>
