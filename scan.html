@@ -42,7 +42,8 @@ let currentAttendee = null;
 
 /* 📷 SCAN HANDLER */
 async function onScanSuccess(text) {
-  const qr = text.trim();
+  alert("SCANNED: [" + text + "]");
+const qr = text;
 
   const { data, error } = await supabaseClient
     .from("attendees")
