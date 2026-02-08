@@ -3,7 +3,6 @@
 <head>
   <title>Admin Dashboard</title>
 
-  <!-- Supabase v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 
@@ -14,20 +13,19 @@
 <ul id="list"></ul>
 
 <script>
-  /* ✅ CREATE SUPABASE CLIENT (ONLY ONCE) */
   const supabaseClient = supabase.createClient(
     "https://qwumwbmystwwhsjpllqn.supabase.co",
     "YOUR_ANON_KEY"
   );
 
-  /* ✅ LOCK PAGE */
+  // 🔒 LOCK PAGE + REMEMBER REDIRECT
   supabaseClient.auth.getUser().then(({ data }) => {
     if (!data.user) {
+      localStorage.setItem("redirectAfterLogin", "admin.html");
       window.location.href = "login.html";
     }
   });
 
-  /* ✅ LOAD ATTENDEES */
   async function loadAttendees() {
     const { data, error } = await supabaseClient
       .from("attendees")
