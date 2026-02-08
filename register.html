@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
   <title>Event Registration</title>
@@ -17,6 +18,12 @@
 const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
 
+supabase.auth.getUser().then(({ data }) => {
+  if (!data.user) {
+    window.location.href = "login.html";
+  }
+});
+  
 function register() {
   const name = document.getElementById("name").value;
   const email = document.getElementById("email").value;
