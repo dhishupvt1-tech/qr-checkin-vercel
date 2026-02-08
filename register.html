@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Event Registration</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+</head>
+<body>
+<h2>Register</h2>
+
+<input id="name" placeholder="Name"><br><br>
+<input id="email" placeholder="Email"><br><br>
+<button onclick="register()">Register</button>
+
+<div id="qrcode"></div>
+
+<script>
+const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+
+function register() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const qr = crypto.randomUUID();
+
+  fetch(`${SUPABASE_URL}/rest/v1/attendees`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY
+    },
+    body: JSON.stringify({ name, email, qr, checked_in: false })
+  });
+
+  new QRCode(document.getElementById("qrcode"), qr);
+}
+</script>
+</body>
+</html>
