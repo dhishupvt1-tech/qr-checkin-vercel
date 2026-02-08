@@ -18,8 +18,7 @@
 <p id="msg"></p>
 
 <script>
-  // ✅ ONLY ONE SUPABASE CLIENT
-  const supabase = supabase.createClient(
+  const supabaseClient = supabase.createClient(
     "https://qwumwbmystwwhsjpllqn.supabase.co",
     "YOUR_ANON_KEY"
   );
@@ -31,7 +30,7 @@
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabaseClient.auth.signInWithPassword({
       email,
       password
     });
