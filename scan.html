@@ -21,9 +21,8 @@
       width: 320px;
     }
     button {
-      padding: 8px 12px;
-      margin-right: 8px;
-      margin-top: 10px;
+      padding: 8px 14px;
+      margin: 6px 4px 0 0;
     }
     .success { color: green; }
     .error { color: red; }
@@ -37,7 +36,6 @@
 <hr>
 
 <div id="reader" style="width:300px"></div>
-
 <div id="result"></div>
 
 <script>
@@ -57,96 +55,47 @@ const supabaseClient = supabase.createClient(
   document.body.style.display = "block";
 })();
 
-let currentAttendee = null;
 const resultDiv = document.getElementById("result");
+let currentAttendee = null;
+let scanLocked = false;
 
 /* ---------- SCAN HANDLER ---------- */
 async function onScanSuccess(qrText) {
+  if (scanLocked) return;
+  scanLocked = true;
+
+  const cleanQR = qrText.trim();
   resultDiv.innerHTML = "🔍 Checking QR...";
 
   const { data, error } = await supabaseClient
     .from("attendees")
     .select("*")
-    .eq("qr", qrText)
+    .eq("qr", cleanQR)
     .single();
 
   if (error || !data) {
     resultDiv.innerHTML = `<p class="error">❌ Invalid QR Code</p>`;
+    unlockScan();
     return;
   }
 
-  // Status handling
   if (data.status === "CHECKED_IN") {
     resultDiv.innerHTML = `<p class="error">⚠️ Already Checked In</p>`;
+    unlockScan();
     return;
   }
 
   if (data.status === "REJECTED") {
     resultDiv.innerHTML = `<p class="error">❌ Entry Rejected</p>`;
+    unlockScan();
     return;
   }
 
   currentAttendee = data;
 
-  // Show attendee details
   resultDiv.innerHTML = `
     <div class="card">
       <b>Name:</b> ${data.name}<br>
       <b>Email:</b> ${data.email}<br>
       <b>Registered By:</b> ${data.created_by}<br>
-      <b>Status:</b> ${data.status || "PENDING"}<br><br>
-
-      <button onclick="checkIn()">✅ Check In</button>
-      <button onclick="rejectEntry()">❌ Reject Entry</button>
-    </div>
-  `;
-}
-
-/* ---------- CHECK IN ---------- */
-async function checkIn() {
-  if (!currentAttendee) return;
-
-  await supabaseClient
-    .from("attendees")
-    .update({
-      status: "CHECKED_IN",
-      checked_in: true,
-      checked_in_at: new Date()
-    })
-    .eq("id", currentAttendee.id);
-
-  resultDiv.innerHTML = `<p class="success">✅ Check-In Successful</p>`;
-  currentAttendee = null;
-}
-
-/* ---------- REJECT ENTRY ---------- */
-async function rejectEntry() {
-  if (!currentAttendee) return;
-
-  await supabaseClient
-    .from("attendees")
-    .update({
-      status: "REJECTED"
-    })
-    .eq("id", currentAttendee.id);
-
-  resultDiv.innerHTML = `<p class="error">❌ Entry Rejected</p>`;
-  currentAttendee = null;
-}
-
-/* ---------- START SCANNER ---------- */
-new Html5Qrcode("reader").start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  onScanSuccess
-);
-
-/* ---------- LOGOUT ---------- */
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-}
-</script>
-
-</body>
-</html>
+      <b>Status:</b> ${
