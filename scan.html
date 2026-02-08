@@ -1,29 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Scan QR</title>
+  <title>Scan</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="authGuard.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <style>
-    body { font-family: Arial; }
-    pre { background:#f4f4f4; padding:10px; }
-    .error { color:red; }
-    .success { color:green; }
-  </style>
 </head>
-
 <body>
 
-<h2>Scan QR</h2>
+<h2>Scan</h2>
+<button onclick="logout()">Logout</button>
+<hr>
 
 <div id="reader" style="width:300px"></div>
-
-<h3>Scanned Value</h3>
-<pre id="scanned">Waiting…</pre>
-
-<h3>Result</h3>
 <div id="result"></div>
 
 <script>
@@ -32,43 +22,71 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let locked = false;
+let current = null;
+await requireAuth(supabaseClient);
 
-async function onScanSuccess(text) {
-  if (locked) return;
-  locked = true;
+async function onScan(text) {
+  const qr = text.trim();
 
-  const scanned = text.trim();
-  document.getElementById("scanned").innerText = scanned;
-
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("attendees")
     .select("*")
-    .eq("qr", scanned);
+    .eq("qr", qr)
+    .single();
 
-  if (error) {
-    document.getElementById("result").innerHTML =
-      `<p class="error">${error.message}</p>`;
-  } else if (!data || data.length === 0) {
-    document.getElementById("result").innerHTML =
-      `<p class="error">❌ QR NOT FOUND</p>`;
-  } else {
-    const a = data[0];
-    document.getElementById("result").innerHTML = `
-      <p class="success">✅ FOUND</p>
-      Name: ${a.name}<br>
-      Email: ${a.email}
-    `;
+  if (!data) {
+    result.innerHTML = "❌ Not found";
+    return;
   }
 
-  setTimeout(() => locked = false, 2000);
+  if (data.status === "CHECKED_IN") {
+    result.innerHTML = "⚠️ Already checked in";
+    return;
+  }
+
+  if (data.status === "REJECTED") {
+    result.innerHTML = "❌ Entry rejected";
+    return;
+  }
+
+  current = data;
+
+  result.innerHTML = `
+    <b>${data.name}</b><br>
+    ${data.email}<br><br>
+    <button onclick="checkIn()">✅ Check In</button>
+    <button onclick="reject()">❌ Reject</button>
+  `;
+}
+
+async function checkIn() {
+  await supabaseClient
+    .from("attendees")
+    .update({ status: "CHECKED_IN" })
+    .eq("id", current.id);
+
+  result.innerHTML = "✅ Checked in";
+}
+
+async function reject() {
+  await supabaseClient
+    .from("attendees")
+    .update({ status: "REJECTED" })
+    .eq("id", current.id);
+
+  result.innerHTML = "❌ Rejected";
 }
 
 new Html5Qrcode("reader").start(
   { facingMode: "environment" },
   { fps: 10, qrbox: 250 },
-  onScanSuccess
+  onScan
 );
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
+}
 </script>
 
 </body>
