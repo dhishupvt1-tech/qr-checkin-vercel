@@ -1,35 +1,117 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin</title>
+  <title>Admin Dashboard</title>
 
+  <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="authGuard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
 </head>
+
 <body>
 
 <h2>Admin Dashboard</h2>
 <button onclick="logout()">Logout</button>
 <hr>
 
-<ul id="list"></ul>
+<p id="status">🔄 Loading attendees...</p>
+
+<table id="table" style="display:none">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Status</th>
+      <th>Registered By</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
 
 <script>
+/* ================== SUPABASE INIT ================== */
+const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+
 const supabaseClient = supabase.createClient(
-  "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
-await requireAuth(supabaseClient);
+/* ================== AUTH CHECK ================== */
+(async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+    return;
+  }
 
-const { data } = await supabaseClient.from("attendees").select("*");
+  loadAttendees();
+})();
 
-data.forEach(a => {
-  list.innerHTML += `
-    <li>${a.name} | ${a.email} | ${a.status}</li>
-  `;
-});
+/* ================== LOAD DATA ================== */
+async function loadAttendees() {
+  const status = document.getElementById("status");
+  const table = document.getElementById("table");
+  const tbody = document.getElementById("tbody");
 
+  const { data, error } = await supabaseClient
+    .from("attendees")
+    .select("name, email, status, created_by")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    status.innerHTML = `<span class="error">❌ ${error.message}</span>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    status.innerHTML = "⚠️ No registrations found";
+    return;
+  }
+
+  tbody.innerHTML = "";
+  data.forEach(a => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${a.name || "-"}</td>
+        <td>${a.email || "-"}</td>
+        <td>${a.status || "-"}</td>
+        <td>${a.created_by || "-"}</td>
+      </tr>
+    `;
+  });
+
+  status.style.display = "none";
+  table.style.display = "table";
+}
+
+/* ================== LOGOUT ================== */
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
