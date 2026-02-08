@@ -6,7 +6,7 @@
   <!-- Supabase v2 -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- QR generator -->
+  <!-- QR Generator -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
@@ -48,18 +48,28 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* ---------- AUTH LOCK ---------- */
+/* ---------- AUTH LOCK (HARD & SAFE) ---------- */
+let currentUserEmail = null;
+
 (async () => {
-  const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) {
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error || !data || !data.user) {
     window.location.href = "login.html";
     return;
   }
+
+  currentUserEmail = data.user.email;
   document.body.style.display = "block";
 })();
 
 /* ---------- REGISTER ---------- */
 async function register() {
+  if (!currentUserEmail) {
+    window.location.href = "login.html";
+    return;
+  }
+
   const nameInput = document.getElementById("name");
   const emailInput = document.getElementById("email");
   const msg = document.getElementById("msg");
@@ -76,20 +86,17 @@ async function register() {
     return;
   }
 
-  // 🔐 PURE UUID (ONLY THIS)
   const qrUUID = crypto.randomUUID();
-
-  const { data: userData } = await supabaseClient.auth.getUser();
 
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
       name: nameVal,
       email: emailVal,
-      qr: qrUUID,          // ✅ DB stores UUID only
+      qr: qrUUID,
       status: "PENDING",
       checked_in: false,
-      created_by: userData.user.email
+      created_by: currentUserEmail
     });
 
   if (error) {
@@ -99,7 +106,6 @@ async function register() {
 
   msg.innerText = "✅ Registration successful";
 
-  // ✅ QR encodes ONLY UUID (scanner-friendly)
   new QRCode(qrBox, {
     text: qrUUID,
     width: 200,
