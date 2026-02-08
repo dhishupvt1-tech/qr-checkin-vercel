@@ -11,8 +11,14 @@
 
   <style>
     body {
-      display: none;
       font-family: Arial, sans-serif;
+    }
+    #loader {
+      padding: 20px;
+      font-size: 16px;
+    }
+    .hidden {
+      display: none;
     }
     .card {
       border: 1px solid #ccc;
@@ -31,12 +37,18 @@
 
 <body>
 
-<h2>QR Entry Scan</h2>
-<button onclick="logout()">Logout</button>
-<hr>
+<div id="loader">🔐 Checking session...</div>
 
-<div id="reader" style="width:300px"></div>
-<div id="result"></div>
+<div id="app" class="hidden">
+
+  <h2>QR Entry Scan</h2>
+  <button onclick="logout()">Logout</button>
+  <hr>
+
+  <div id="reader" style="width:300px"></div>
+  <div id="result"></div>
+
+</div>
 
 <script>
 /* ---------- SUPABASE SETUP ---------- */
@@ -45,19 +57,49 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* ---------- AUTH LOCK ---------- */
-(async () => {
-  const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) {
-    window.location.href = "login.html";
-    return;
-  }
-  document.body.style.display = "block";
-})();
-
+const loader = document.getElementById("loader");
+const app = document.getElementById("app");
 const resultDiv = document.getElementById("result");
+
 let currentAttendee = null;
 let scanLocked = false;
+
+/* ---------- AUTH CHECK ---------- */
+(async () => {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error || !data.session) {
+      window.location.href = "login.html";
+      return;
+    }
+
+    loader.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    startScanner();
+
+  } catch (err) {
+    loader.innerHTML = "❌ Error loading page. Check console.";
+    console.error(err);
+  }
+})();
+
+/* ---------- START SCANNER ---------- */
+function startScanner() {
+  try {
+    const scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    );
+  } catch (e) {
+    resultDiv.innerHTML = `<p class="error">Camera failed to start</p>`;
+    console.error(e);
+  }
+}
 
 /* ---------- SCAN HANDLER ---------- */
 async function onScanSuccess(qrText) {
@@ -98,4 +140,57 @@ async function onScanSuccess(qrText) {
       <b>Name:</b> ${data.name}<br>
       <b>Email:</b> ${data.email}<br>
       <b>Registered By:</b> ${data.created_by}<br>
-      <b>Status:</b> ${
+      <b>Status:</b> ${data.status}<br><br>
+
+      <button onclick="checkIn()">✅ Check In</button>
+      <button onclick="rejectEntry()">❌ Reject Entry</button>
+    </div>
+  `;
+
+  unlockScan();
+}
+
+/* ---------- CHECK IN ---------- */
+async function checkIn() {
+  if (!currentAttendee) return;
+
+  await supabaseClient
+    .from("attendees")
+    .update({
+      status: "CHECKED_IN",
+      checked_in: true,
+      checked_in_at: new Date()
+    })
+    .eq("id", currentAttendee.id);
+
+  resultDiv.innerHTML = `<p class="success">✅ Check-In Successful</p>`;
+  currentAttendee = null;
+}
+
+/* ---------- REJECT ---------- */
+async function rejectEntry() {
+  if (!currentAttendee) return;
+
+  await supabaseClient
+    .from("attendees")
+    .update({ status: "REJECTED" })
+    .eq("id", currentAttendee.id);
+
+  resultDiv.innerHTML = `<p class="error">❌ Entry Rejected</p>`;
+  currentAttendee = null;
+}
+
+/* ---------- UNLOCK ---------- */
+function unlockScan() {
+  setTimeout(() => scanLocked = false, 2000);
+}
+
+/* ---------- LOGOUT ---------- */
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
