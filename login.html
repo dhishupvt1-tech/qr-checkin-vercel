@@ -1,45 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login</title>
+  <title>Register</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+  <style>
+    body { display:none; font-family: Arial; }
+    input { padding:8px; width:260px; }
+    button { padding:8px 16px; }
+  </style>
 </head>
+
 <body>
 
-<h2>Login</h2>
+<h2>Registration</h2>
+<button onclick="logout()">Logout</button>
+<hr>
 
-<input id="email" placeholder="Email">
+<input id="name" placeholder="Full Name">
 <br><br>
-<input id="password" type="password" placeholder="Password">
+<input id="email" placeholder="Email ID">
 <br><br>
 
-<button onclick="login()">Login</button>
+<button onclick="register()">Register</button>
+
 <p id="msg"></p>
+<div id="qrcode"></div>
 
 <script>
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-// If already logged in, go to register
-supabaseClient.auth.getSession().then(({ data }) => {
-  if (data.session) {
-    window.location.href = "register.html";
-  }
-});
+let currentUserEmail = null;
 
-async function login() {
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
+/* ✅ AUTH CHECK — USE SESSION, NOT USER */
+(async () => {
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (!data.session) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  currentUserEmail = data.session.user.email;
+  document.body.style.display = "block";
+})();
+
+async function register() {
+  if (!currentUserEmail) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const nameVal = document.getElementById("name").value.trim();
+  const emailVal = document.getElementById("email").value.trim();
+
+  if (!nameVal || !emailVal) {
+    msg.innerText = "Name and Email required";
+    return;
+  }
+
+  const qrUUID = crypto.randomUUID();
+
+  const { error } = await supabaseClient.from("attendees").insert({
+    name: nameVal,
+    email: emailVal,
+    qr: qrUUID,
+    status: "PENDING",
+    checked_in: false,
+    created_by: currentUserEmail
   });
 
   if (error) {
     msg.innerText = error.message;
-  } else {
-    window.location.href = "register.html";
+    return;
   }
+
+  msg.innerText = "Registration successful";
+  qrcode.innerHTML = "";
+  new QRCode(qrcode, qrUUID);
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
 }
 </script>
 
