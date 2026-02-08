@@ -11,8 +11,14 @@
 
   <style>
     body {
-      display: none;
       font-family: Arial, sans-serif;
+    }
+    #app {
+      display: none;
+    }
+    #loader {
+      padding: 20px;
+      font-size: 16px;
     }
     input {
       padding: 8px;
@@ -22,49 +28,130 @@
       padding: 8px 16px;
       margin-top: 6px;
     }
+    .error {
+      color: red;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>Registration</h2>
-<button onclick="logout()">Logout</button>
-<hr>
+<div id="loader">🔐 Checking login status...</div>
 
-<input id="nameInput" placeholder="Full Name">
-<br><br>
-<input id="emailInput" placeholder="Email ID">
-<br><br>
+<div id="app">
+  <h2>Registration</h2>
+  <button onclick="logout()">Logout</button>
+  <hr>
 
-<button onclick="register()">Register</button>
+  <input id="nameInput" placeholder="Full Name">
+  <br><br>
+  <input id="emailInput" placeholder="Email ID">
+  <br><br>
 
-<p id="msg"></p>
-<div id="qrcode"></div>
+  <button onclick="register()">Register</button>
+
+  <p id="msg"></p>
+  <div id="qrcode"></div>
+</div>
 
 <script>
 /* ---------- SUPABASE SETUP ---------- */
 const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
 
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
 
-/* ---------- AUTH GUARD (NO LOOP) ---------- */
+/* ---------- DOM ---------- */
+const loader = document.getElementById("loader");
+const app = document.getElementById("app");
+const msg = document.getElementById("msg");
+const qrBox = document.getElementById("qrcode");
+
 let currentUserEmail = null;
 
-setTimeout(async () => {
-  const { data } = await supabaseClient.auth.getSession();
+/* ---------- AUTH CHECK (SAFE) ---------- */
+(async () => {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
 
-  if (!data.session) {
+    if (error || !data.session) {
+      loader.innerHTML = "❌ Not logged in. Redirecting to login...";
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1000);
+      return;
+    }
+
+    currentUserEmail = data.session.user.email;
+
+    loader.style.display = "none";
+    app.style.display = "block";
+
+  } catch (e) {
+    loader.innerHTML = "❌ Something went wrong. Check console.";
+    console.error(e);
+  }
+})();
+
+/* ---------- REGISTER ---------- */
+async function register() {
+  if (!currentUserEmail) {
     window.location.href = "login.html";
     return;
   }
 
-  currentUserEmail = data.session.user.email;
-  document.body.style.display = "block";
-}, 300);
+  const nameVal = document.getElementById("nameInput").value.trim();
+  const emailVal = document.getElementById("emailInput").value.trim();
 
-/* ---------- REGISTER FUNCTION ---------- */
-async function
+  msg.innerText = "";
+  qrBox.innerHTML = "";
+
+  if (!nameVal || !emailVal) {
+    msg.innerText = "❌ Name and Email are mandatory";
+    msg.className = "error";
+    return;
+  }
+
+  const qrUUID = crypto.randomUUID();
+
+  const { error } = await supabaseClient.from("attendees").insert({
+    name: nameVal,
+    email: emailVal,
+    qr: qrUUID,
+    status: "PENDING",
+    checked_in: false,
+    created_by: currentUserEmail
+  });
+
+  if (error) {
+    msg.innerText = error.message;
+    msg.className = "error";
+    return;
+  }
+
+  msg.innerText = "✅ Registration successful";
+  msg.className = "";
+
+  new QRCode(qrBox, {
+    text: qrUUID,
+    width: 200,
+    height: 200
+  });
+
+  document.getElementById("nameInput").value = "";
+  document.getElementById("emailInput").value = "";
+}
+
+/* ---------- LOGOUT ---------- */
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
