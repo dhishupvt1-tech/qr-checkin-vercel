@@ -20,10 +20,10 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         sender: {
           name: "Event Team",
-          email: "tickets.tantra26@10612947.brevosend.com" // 🔴 MUST MATCH BREVO VERIFIED SENDER
+          email: "tickets.tantra26@gmail.com" // 🔴 MUST MATCH BREVO VERIFIED SENDER
         },
         replyTo: {
-          email: "tickets.tantra26@10612947.brevosend.com",
+          email: "tickets.tantra26@gmail.com",
           name: "Event Team"
         },
         to: [
