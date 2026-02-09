@@ -3,23 +3,27 @@
 <head>
   <title>Register</title>
 
+  <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <!-- QR Code -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
-    body { font-family: Arial; }
+    body { font-family: Arial, sans-serif; }
     input { padding:8px; width:260px; margin-bottom:8px; }
     button { padding:8px 16px; }
     .error { color:red; }
     .success { color:green; }
+    nav { margin-bottom:15px; }
   </style>
 </head>
 
 <body>
 
-<nav style="margin-bottom:15px">
+<nav>
   <a href="register.html">Register</a> |
-  <a href="scan.html">Scan</a> |
+  <a href="scan.html">Scan</a |
   <a href="admin.html">Admin</a> |
   <a href="dashboard.html">Dashboard</a> |
   <a href="#" onclick="logout()">Logout</a>
@@ -40,15 +44,23 @@
 <div id="qrcode"></div>
 
 <script>
+/* ================= SUPABASE ================= */
+
+/* 🔴 CHANGE THIS: PUT YOUR CORRECT ANON KEY */
+const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+
 const supabaseClient = supabase.createClient(
-  "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
+/* ================= REGISTER ================= */
 async function register() {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
   const regNo = regNoInput.value.trim();
+
   const msg = document.getElementById("msg");
   const qrBox = document.getElementById("qrcode");
 
@@ -64,39 +76,60 @@ async function register() {
 
   const qr = crypto.randomUUID();
 
+  /* ===== INSERT INTO SUPABASE ===== */
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
-      name,
-      email,
+      name: name,
+      email: email,
       reg_no: regNo,
-      qr,
+      qr: qr,
       status: "PENDING"
     });
 
   if (error) {
-    // 🔑 FRIENDLY DUPLICATE REG NO MESSAGE
     if (error.code === "23505") {
       msg.innerText = "⚠️ Reg No already registered";
       msg.className = "error";
       return;
     }
-
     msg.innerText = error.message;
     msg.className = "error";
     return;
   }
 
-  msg.innerText = "✅ Registration successful";
-  msg.className = "success";
+  /* ===== GENERATE QR IMAGE ===== */
+  const tempDiv = document.createElement("div");
+  new QRCode(tempDiv, qr);
+  const qrImage = tempDiv.querySelector("img").src;
 
-  new QRCode(qrBox, qr);
+  qrBox.appendChild(tempDiv);
+
+  /* ===== SEND EMAIL USING BREVO (BACKEND) ===== */
+  try {
+    await fetch("/api/sendEmail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        reg_no: regNo,
+        qr_image: qrImage
+      })
+    });
+  } catch (e) {
+    console.error("Email failed", e);
+  }
+
+  msg.innerText = "✅ Registered successfully. QR sent to email.";
+  msg.className = "success";
 
   nameInput.value = "";
   emailInput.value = "";
   regNoInput.value = "";
 }
 
+/* ================= LOGOUT ================= */
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
