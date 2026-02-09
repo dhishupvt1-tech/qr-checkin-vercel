@@ -3,45 +3,37 @@
 <head>
   <title>Admin Dashboard</title>
 
-  <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #f4f4f4;
-    }
-    .error {
-      color: red;
-    }
+    body { font-family: Arial; }
+    table { border-collapse: collapse; width:100%; margin-top:10px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+    th { background:#f4f4f4; }
+    input { padding:8px; width:300px; margin-bottom:10px; }
   </style>
 </head>
 
 <body>
 
-<h2>Admin Dashboard</h2>
-<button onclick="logout()">Logout</button>
-<hr>
+<nav style="margin-bottom:15px">
+  <a href="register.html">Register</a> |
+  <a href="scan.html">Scan</a> |
+  <a href="admin.html">Admin</a> |
+  <a href="dashboard.html">Dashboard</a> |
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
 
-<p id="status">🔄 Loading attendees...</p>
+<h2>Admin Panel</h2>
 
-<table id="table" style="display:none">
+<input id="search" placeholder="Search by Name / Email / Reg No" onkeyup="filterTable()">
+
+<table id="table">
   <thead>
     <tr>
       <th>Name</th>
       <th>Email</th>
+      <th>Reg No</th>
       <th>Status</th>
       <th>Registered By</th>
     </tr>
@@ -50,64 +42,50 @@
 </table>
 
 <script>
-/* ================== SUPABASE INIT ================== */
-const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
-const SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
-
 const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* ================== AUTH CHECK ================== */
+let attendees = [];
+
 (async () => {
   const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) {
-    window.location.href = "login.html";
-    return;
-  }
+  if (!data.session) return window.location.href = "login.html";
 
-  loadAttendees();
+  const res = await supabaseClient
+    .from("attendees")
+    .select("name,email,reg_no,status,created_by");
+
+  attendees = res.data || [];
+  render(attendees);
 })();
 
-/* ================== LOAD ATTENDEES ================== */
-async function loadAttendees() {
-  const status = document.getElementById("status");
-  const table = document.getElementById("table");
-  const tbody = document.getElementById("tbody");
-
-  const { data, error } = await supabaseClient
-    .from("attendees")
-    .select("name, email, status, created_by");
-
-  if (error) {
-    status.innerHTML = `<span class="error">❌ ${error.message}</span>`;
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    status.innerText = "⚠️ No registrations found";
-    return;
-  }
-
+function render(list) {
   tbody.innerHTML = "";
-  data.forEach(a => {
+  list.forEach(a => {
     tbody.innerHTML += `
       <tr>
-        <td>${a.name || "-"}</td>
-        <td>${a.email || "-"}</td>
-        <td>${a.status || "-"}</td>
+        <td>${a.name}</td>
+        <td>${a.email}</td>
+        <td>${a.reg_no}</td>
+        <td>${a.status}</td>
         <td>${a.created_by || "-"}</td>
       </tr>
     `;
   });
-
-  status.style.display = "none";
-  table.style.display = "table";
 }
 
-/* ================== LOGOUT ================== */
+function filterTable() {
+  const q = search.value.toLowerCase();
+  const filtered = attendees.filter(a =>
+    a.name.toLowerCase().includes(q) ||
+    a.email.toLowerCase().includes(q) ||
+    a.reg_no.toLowerCase().includes(q)
+  );
+  render(filtered);
+}
+
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
