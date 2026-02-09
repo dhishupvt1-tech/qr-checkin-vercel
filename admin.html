@@ -6,11 +6,16 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    body { font-family: Arial; }
+    body { font-family: Arial, sans-serif; }
     table { border-collapse: collapse; width:100%; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:8px; text-align:left; }
     th { background:#f4f4f4; }
-    input { padding:8px; width:300px; margin-bottom:10px; }
+    input {
+      padding:8px;
+      width:320px;
+      margin-bottom:10px;
+      font-size:14px;
+    }
   </style>
 </head>
 
@@ -26,9 +31,12 @@
 
 <h2>Admin Panel</h2>
 
-<input id="search" placeholder="Search by Name / Email / Reg No" onkeyup="filterTable()">
+<input
+  id="search"
+  placeholder="Search by Name / Email / Reg No"
+>
 
-<table id="table">
+<table>
   <thead>
     <tr>
       <th>Name</th>
@@ -42,16 +50,22 @@
 </table>
 
 <script>
+/* ================= SUPABASE ================= */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
+/* ================= STATE ================= */
 let attendees = [];
 
+/* ================= INIT ================= */
 (async () => {
   const { data } = await supabaseClient.auth.getSession();
-  if (!data.session) return window.location.href = "login.html";
+  if (!data.session) {
+    window.location.href = "login.html";
+    return;
+  }
 
   const res = await supabaseClient
     .from("attendees")
@@ -61,31 +75,54 @@ let attendees = [];
   render(attendees);
 })();
 
+/* ================= RENDER ================= */
 function render(list) {
+  const tbody = document.getElementById("tbody");
   tbody.innerHTML = "";
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center">No matching records</td>
+      </tr>
+    `;
+    return;
+  }
+
   list.forEach(a => {
     tbody.innerHTML += `
       <tr>
-        <td>${a.name}</td>
-        <td>${a.email}</td>
-        <td>${a.reg_no}</td>
-        <td>${a.status}</td>
+        <td>${a.name || "-"}</td>
+        <td>${a.email || "-"}</td>
+        <td>${a.reg_no || "-"}</td>
+        <td>${a.status || "-"}</td>
         <td>${a.created_by || "-"}</td>
       </tr>
     `;
   });
 }
 
-function filterTable() {
-  const q = search.value.toLowerCase();
-  const filtered = attendees.filter(a =>
-    a.name.toLowerCase().includes(q) ||
-    a.email.toLowerCase().includes(q) ||
-    a.reg_no.toLowerCase().includes(q)
-  );
-  render(filtered);
-}
+/* ================= SEARCH ================= */
+const searchInput = document.getElementById("search");
 
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.trim().toLowerCase();
+
+  if (!q) {
+    render(attendees);
+    return;
+  }
+
+  const filtered = attendees.filter(a =>
+    (a.name && a.name.toLowerCase().includes(q)) ||
+    (a.email && a.email.toLowerCase().includes(q)) ||
+    (a.reg_no && a.reg_no.toLowerCase().includes(q))
+  );
+
+  render(filtered);
+});
+
+/* ================= LOGOUT ================= */
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
