@@ -10,6 +10,8 @@
     body { font-family: Arial; }
     input { padding:8px; width:260px; margin-bottom:8px; }
     button { padding:8px 16px; }
+    .error { color:red; }
+    .success { color:green; }
   </style>
 </head>
 
@@ -19,6 +21,7 @@
   <a href="register.html">Register</a> |
   <a href="scan.html">Scan</a> |
   <a href="admin.html">Admin</a> |
+  <a href="dashboard.html">Dashboard</a> |
   <a href="#" onclick="logout()">Logout</a>
 </nav>
 
@@ -50,10 +53,12 @@ async function register() {
   const qrBox = document.getElementById("qrcode");
 
   msg.innerText = "";
+  msg.className = "";
   qrBox.innerHTML = "";
 
   if (!name || !email || !regNo) {
-    msg.innerText = "All fields are required";
+    msg.innerText = "⚠️ All fields are required";
+    msg.className = "error";
     return;
   }
 
@@ -70,11 +75,20 @@ async function register() {
     });
 
   if (error) {
+    // 🔑 FRIENDLY DUPLICATE REG NO MESSAGE
+    if (error.code === "23505") {
+      msg.innerText = "⚠️ Reg No already registered";
+      msg.className = "error";
+      return;
+    }
+
     msg.innerText = error.message;
+    msg.className = "error";
     return;
   }
 
-  msg.innerText = "Registration successful";
+  msg.innerText = "✅ Registration successful";
+  msg.className = "success";
 
   new QRCode(qrBox, qr);
 
