@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         sender: {
           name: "Event Team",
-          email: "tickets.tantra26@gmail.com",
+          email: "tickets.tantra26@gmail.com", // MUST be verified in Brevo
         },
         to: [{ email }],
         subject: "Your Event QR Code – Entry Pass",
@@ -31,8 +31,23 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    return res.status(200).json(data);
+
+    if (!response.ok) {
+      return res.status(400).json({
+        error: "Brevo error",
+        details: data
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+
   } catch (err) {
-    return res.status(500).json({ error: "Email failed" });
+    return res.status(500).json({
+      error: "Server error",
+      message: err.message
+    });
   }
 }
