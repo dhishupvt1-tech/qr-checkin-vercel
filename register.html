@@ -4,17 +4,33 @@
   <title>Register</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="authGuard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+  <style>
+    body { font-family: Arial; }
+    input { padding:8px; width:260px; margin-bottom:8px; }
+    button { padding:8px 16px; }
+  </style>
 </head>
+
 <body>
 
-<h2>Register</h2>
-<button onclick="logout()">Logout</button>
-<hr>
+<nav style="margin-bottom:15px">
+  <a href="register.html">Register</a> |
+  <a href="scan.html">Scan</a> |
+  <a href="admin.html">Admin</a> |
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
 
-<input id="nameInput" placeholder="Name"><br><br>
-<input id="emailInput" placeholder="Email"><br><br>
+<h2>Register Attendee</h2>
+
+<input id="nameInput" placeholder="Name">
+<br>
+<input id="emailInput" placeholder="Email">
+<br>
+<input id="regNoInput" placeholder="Reg No">
+<br>
+
 <button onclick="register()">Register</button>
 
 <p id="msg"></p>
@@ -26,41 +42,45 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let userEmail = null;
-
-(async () => {
-  const user = await requireAuth(supabaseClient);
-  if (!user) return;
-  userEmail = user.email;
-})();
-
 async function register() {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
+  const regNo = regNoInput.value.trim();
+  const msg = document.getElementById("msg");
+  const qrBox = document.getElementById("qrcode");
 
-  if (!name || !email) {
-    msg.innerText = "All fields required";
+  msg.innerText = "";
+  qrBox.innerHTML = "";
+
+  if (!name || !email || !regNo) {
+    msg.innerText = "All fields are required";
     return;
   }
 
   const qr = crypto.randomUUID();
 
-  const { error } = await supabaseClient.from("attendees").insert({
-    name,
-    email,
-    qr,
-    status: "PENDING",
-    created_by: userEmail
-  });
+  const { error } = await supabaseClient
+    .from("attendees")
+    .insert({
+      name,
+      email,
+      reg_no: regNo,
+      qr,
+      status: "PENDING"
+    });
 
   if (error) {
     msg.innerText = error.message;
     return;
   }
 
-  qrcode.innerHTML = "";
-  new QRCode(qrcode, qr);
-  msg.innerText = "Registered successfully";
+  msg.innerText = "Registration successful";
+
+  new QRCode(qrBox, qr);
+
+  nameInput.value = "";
+  emailInput.value = "";
+  regNoInput.value = "";
 }
 
 async function logout() {
