@@ -5,11 +5,8 @@ export default async function handler(req, res) {
 
   const { name, email, reg_no, qr_image } = req.body;
 
-  // BASIC VALIDATION
   if (!name || !email || !reg_no || !qr_image) {
-    return res.status(400).json({
-      error: "Missing required fields",
-    });
+    return res.status(400).json({ error: "Missing fields" });
   }
 
   try {
@@ -17,52 +14,51 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
-        "accept": "application/json"
+        "accept": "application/json",
+        "api-key": process.env.BREVO_API_KEY
       },
       body: JSON.stringify({
         sender: {
           name: "Event Team",
-          email: "tickets.tantra26@gmail.com" // ⚠️ MUST be verified in Brevo
+          email: "tickets.tantra26@10612947.brevosend.com" // 🔴 MUST MATCH BREVO VERIFIED SENDER
+        },
+        replyTo: {
+          email: "tickets.tantra26@10612947.brevosend.com",
+          name: "Event Team"
         },
         to: [
-          {
-            email: email
-          }
+          { email: email }
         ],
         subject: "Your Event QR Code – Entry Pass",
         htmlContent: `
           <h3>Hello ${name},</h3>
-
           <p>Your registration is confirmed.</p>
-
-          <p>
-            <b>Reg No:</b> ${reg_no}<br/>
-            <b>Email:</b> ${email}
-          </p>
-
-          <p>Please show the QR code below at the entry:</p>
-
+          <p><b>Reg No:</b> ${reg_no}</p>
+          <p>Show this QR at entry:</p>
           <img src="${qr_image}" width="220"/>
-
-          <p><br/>Regards,<br/>Event Team</p>
+          <p><br/>Event Team</p>
+        `,
+        textContent: `
+Hello ${name},
+Your registration is confirmed.
+Reg No: ${reg_no}
+Please show the QR code sent in this mail at entry.
         `
       })
     });
 
-    const data = await response.json();
+    const brevoResponse = await response.json();
 
     if (!response.ok) {
       return res.status(400).json({
-        error: "Brevo rejected email",
-        brevo: data
+        error: "Brevo rejected request",
+        brevo: brevoResponse
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Email sent successfully",
-      brevo: data
+      brevo: brevoResponse
     });
 
   } catch (err) {
