@@ -91,7 +91,8 @@ export default async function handler(req, res) {
     doc.fontSize(13).fillColor("white")
       .text(`Name: ${name}`, { align: "center" })
       .text(`Reg No: ${reg_no}`, { align: "center" })
-      .text(`Email: ${email}`, { align: "center" });
+      .text(`Email: ${email}`, { align: "center" })
+      .text(`Entry_ID: ${entry_id}`, { align: "center" });
 
     /* ================= QR (BACKEND GENERATED) ================= */
     const qrDataUrl = await QRCode.toDataURL(qr_text, {
