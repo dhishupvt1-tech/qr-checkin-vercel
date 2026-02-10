@@ -3,10 +3,7 @@
 <head>
   <title>TANTRA 2026 | Registration</title>
 
-  <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-  <!-- QR Code (for on-screen display only) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
@@ -74,12 +71,27 @@ const supabaseClient = supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
+let loggedInUserEmail = null;
+
+/* ================= SESSION LOAD (CRITICAL FIX) ================= */
+async function loadUser() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  loggedInUserEmail = session.user.email;
+}
+
+loadUser();
+
 /* ================= REGISTER ================= */
 async function register() {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
   const regNo = regNoInput.value.trim();
-
   const msg = document.getElementById("msg");
   const qrBox = document.getElementById("qrcode");
 
@@ -87,24 +99,29 @@ async function register() {
   msg.className = "";
   qrBox.innerHTML = "";
 
+  if (!loggedInUserEmail) {
+    msg.innerText = "⚠️ Session not ready. Refresh the page.";
+    msg.className = "error";
+    return;
+  }
+
   if (!name || !email || !regNo) {
     msg.innerText = "⚠️ All fields are required";
     msg.className = "error";
     return;
   }
 
-  // 🔑 THIS IS THE QR TEXT (SENT TO BACKEND)
   const qrText = crypto.randomUUID();
 
-  /* ===== SAVE TO DATABASE ===== */
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
-      name: name,
-      email: email,
+      name,
+      email,
       reg_no: regNo,
       qr: qrText,
-      status: "PENDING"
+      status: "PENDING",
+      created_by: loggedInUserEmail
     });
 
   if (error) {
@@ -118,47 +135,12 @@ async function register() {
     return;
   }
 
-  /* ===== SHOW QR ON SCREEN ===== */
   const qrDiv = document.createElement("div");
-  new QRCode(qrDiv, {
-    text: qrText,
-    width: 200,
-    height: 200
-  });
+  new QRCode(qrDiv, { text: qrText, width: 200, height: 200 });
   qrBox.appendChild(qrDiv);
 
-  /* ===== SEND EMAIL (QR TEXT ONLY) ===== */
-  try {
-    const emailRes = await fetch("/api/sendEmail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        reg_no: regNo,
-        qr_text: qrText   // 🔴 IMPORTANT FIX
-      })
-    });
-
-    const result = await emailRes.json();
-
-    if (!emailRes.ok) {
-      console.error(result);
-      msg.innerText =
-        "⚠️ Registered successfully, but email failed. Please save the QR shown above.";
-      msg.className = "error";
-      return;
-    }
-
-    msg.innerText = "✅ Registered successfully. QR pass sent to email.";
-    msg.className = "success";
-
-  } catch (err) {
-    console.error(err);
-    msg.innerText =
-      "⚠️ Registered successfully, but email could not be sent. Please save the QR shown above.";
-    msg.className = "error";
-  }
+  msg.innerText = "✅ Registered successfully. QR generated.";
+  msg.className = "success";
 
   nameInput.value = "";
   emailInput.value = "";
