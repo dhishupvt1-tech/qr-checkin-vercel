@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TANTRA 2026 | Admin</title>
+  <title>Admin – TANTRA 2026</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    body { background:#0B1C2D; color:white; padding:30px; font-family:Arial }
+    body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
     table { width:100%; border-collapse:collapse }
     th,td { border:1px solid #444; padding:8px; text-align:center }
     th { background:#11263f; color:#C9A44C }
-    button { background:#C9A44C; border:none; padding:6px 10px; cursor:pointer }
   </style>
 </head>
 
 <body>
 
-<h2>Admin Dashboard – TANTRA 2026</h2>
+<h2>Admin Dashboard</h2>
 
 <table>
   <thead>
@@ -25,8 +24,6 @@
       <th>Reg No</th>
       <th>Entry ID</th>
       <th>Status</th>
-      <th>Created By</th>
-      <th>QR</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -41,7 +38,6 @@ const supabaseClient = supabase.createClient(
 async function load() {
   const { data } = await supabaseClient.from("attendees").select("*");
   const tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
 
   data.forEach(a => {
     tbody.innerHTML += `
@@ -49,18 +45,11 @@ async function load() {
         <td>${a.name}</td>
         <td>${a.email}</td>
         <td>${a.reg_no}</td>
-        <td>${a.entry_id}</td>
+        <td>${a.entry_id || "-"}</td>
         <td>${a.status}</td>
-        <td>${a.created_by || "-"}</td>
-        <td><button onclick="viewQR('${encodeURIComponent(a.qr)}')">View</button></td>
       </tr>`;
   });
 }
-
-function viewQR(qr) {
-  window.open(`view-qr.html?qr=${qr}`, "_blank");
-}
-
 load();
 </script>
 
