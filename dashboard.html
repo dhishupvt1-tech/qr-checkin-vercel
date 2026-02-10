@@ -5,20 +5,21 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
     nav a { color:#C9A44C; margin-right:12px; text-decoration:none }
+    .cards { display:flex; gap:15px; margin-bottom:30px }
     .card {
-      display:inline-block;
       background:#11263f;
       padding:20px;
-      margin:10px;
       border-radius:8px;
-      min-width:180px;
+      min-width:160px;
       text-align:center;
     }
     .num { font-size:28px; font-weight:bold }
+    canvas { max-width:420px; margin-top:20px }
   </style>
 </head>
 
@@ -34,7 +35,14 @@
 
 <h2>Live Dashboard – TANTRA 2026</h2>
 
-<div id="cards"></div>
+<div class="cards">
+  <div class="card"><div>Total</div><div class="num" id="total">0</div></div>
+  <div class="card"><div>Checked In</div><div class="num" id="checked">0</div></div>
+  <div class="card"><div>Pending</div><div class="num" id="pending">0</div></div>
+  <div class="card"><div>Rejected</div><div class="num" id="rejected">0</div></div>
+</div>
+
+<canvas id="pieChart"></canvas>
 
 <script>
 const supabaseClient = supabase.createClient(
@@ -42,30 +50,38 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-/* 🔐 AUTH FIRST, THEN LOAD DASHBOARD */
+/* 🔐 AUTH FIRST */
 (async () => {
   const user = await requireAuth(supabaseClient);
   if (!user) return;
-
-  loadStats();
+  loadDashboard();
 })();
 
-async function loadStats() {
+async function loadDashboard() {
   const { data } = await supabaseClient
     .from("attendees")
     .select("status");
 
   const total = data.length;
-  const checkedIn = data.filter(d => d.status === "CHECKED_IN").length;
+  const checked = data.filter(d => d.status === "CHECKED_IN").length;
   const rejected = data.filter(d => d.status === "REJECTED").length;
   const pending = data.filter(d => d.status === "PENDING").length;
 
-  document.getElementById("cards").innerHTML = `
-    <div class="card"><div>Total</div><div class="num">${total}</div></div>
-    <div class="card"><div>Checked In</div><div class="num">${checkedIn}</div></div>
-    <div class="card"><div>Pending</div><div class="num">${pending}</div></div>
-    <div class="card"><div>Rejected</div><div class="num">${rejected}</div></div>
-  `;
+  document.getElementById("total").innerText = total;
+  document.getElementById("checked").innerText = checked;
+  document.getElementById("pending").innerText = pending;
+  document.getElementById("rejected").innerText = rejected;
+
+  new Chart(document.getElementById("pieChart"), {
+    type: "pie",
+    data: {
+      labels: ["Checked In", "Pending", "Rejected"],
+      datasets: [{
+        data: [checked, pending, rejected],
+        backgroundColor: ["#4CAF50", "#FFC107", "#F44336"]
+      }]
+    }
+  });
 }
 
 async function logout() {
