@@ -7,13 +7,13 @@
   <style>
     body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
     input,button { padding:10px; margin:6px 0 }
-    button { background:#C9A44C; border:none; cursor:pointer }
+    button { background:#C9A44C; border:none }
   </style>
 </head>
 
 <body>
 
-<h2>Scan / Manual Entry</h2>
+<h2>Scan / Manual Check-In</h2>
 
 <p>Manual Entry ID (if QR fails):</p>
 <input id="entryIdInput" placeholder="T26-XXXXXX">
@@ -27,16 +27,12 @@ const supabaseClient = supabase.createClient(
 );
 
 async function checkByEntryId() {
-  const entryId = entryIdInput.value.trim().toUpperCase();
-  if (!entryId) {
-    alert("Enter Entry ID");
-    return;
-  }
+  const id = entryIdInput.value.trim().toUpperCase();
 
   const { data, error } = await supabaseClient
     .from("attendees")
     .select("*")
-    .eq("entry_id", entryId)
+    .eq("entry_id", id)
     .single();
 
   if (error || !data) {
@@ -45,16 +41,16 @@ async function checkByEntryId() {
   }
 
   if (data.status === "CHECKED_IN") {
-    alert("⚠️ Already checked in");
+    alert("Already checked in");
     return;
   }
 
   await supabaseClient
     .from("attendees")
     .update({ status: "CHECKED_IN" })
-    .eq("entry_id", entryId);
+    .eq("entry_id", id);
 
-  alert(`✅ ${data.name} checked in successfully`);
+  alert(`✅ ${data.name} checked in`);
 }
 </script>
 
