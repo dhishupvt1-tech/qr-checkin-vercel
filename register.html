@@ -1,41 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Register</title>
+  <title>TANTRA 2026 | Registration</title>
 
   <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- QR Code -->
+  <!-- QR Code (for on-screen display only) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; }
-    input { padding:8px; width:260px; margin-bottom:8px; }
-    button { padding:8px 16px; }
-    .error { color:red; }
-    .success { color:green; }
-    nav { margin-bottom:15px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0B1C2D;
+      color: white;
+      padding: 30px;
+    }
+    input {
+      padding: 10px;
+      width: 280px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border: none;
+    }
+    button {
+      padding: 10px 20px;
+      background: #C9A44C;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .error { color: #ff8080; }
+    .success { color: #9cff9c; }
+    nav a {
+      color: #C9A44C;
+      margin-right: 12px;
+      text-decoration: none;
+    }
   </style>
 </head>
 
 <body>
 
 <nav>
-  <a href="register.html">Register</a> |
-  <a href="scan.html">Scan</a> |
-  <a href="admin.html">Admin</a> |
-  <a href="dashboard.html">Dashboard</a> |
+  <a href="register.html">Register</a>
+  <a href="scan.html">Scan</a>
+  <a href="admin.html">Admin</a>
+  <a href="dashboard.html">Dashboard</a>
   <a href="#" onclick="logout()">Logout</a>
 </nav>
 
-<h2>Register Attendee</h2>
+<h2>TANTRA 2026 – Registration</h2>
 
 <input id="nameInput" placeholder="Name">
 <br>
 <input id="emailInput" placeholder="Email">
 <br>
-<input id="regNoInput" placeholder="Reg No">
+<input id="regNoInput" placeholder="Register Number">
 <br>
 
 <button onclick="register()">Register</button>
@@ -72,16 +93,17 @@ async function register() {
     return;
   }
 
-  const qr = crypto.randomUUID();
+  // 🔑 THIS IS THE QR TEXT (SENT TO BACKEND)
+  const qrText = crypto.randomUUID();
 
   /* ===== SAVE TO DATABASE ===== */
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
-      name,
-      email,
+      name: name,
+      email: email,
       reg_no: regNo,
-      qr,
+      qr: qrText,
       status: "PENDING"
     });
 
@@ -96,30 +118,16 @@ async function register() {
     return;
   }
 
-  /* ===== GENERATE QR (FORCE IMAGE MODE) ===== */
-  const qrTemp = document.createElement("div");
-
-  new QRCode(qrTemp, {
-    text: qr,
-    width: 220,
-    height: 220,
-    useSVG: false
+  /* ===== SHOW QR ON SCREEN ===== */
+  const qrDiv = document.createElement("div");
+  new QRCode(qrDiv, {
+    text: qrText,
+    width: 200,
+    height: 200
   });
+  qrBox.appendChild(qrDiv);
 
-  await new Promise(r => setTimeout(r, 300));
-
-  const qrImgTag = qrTemp.querySelector("img");
-
-  if (!qrImgTag) {
-    msg.innerText = "❌ QR generation failed";
-    msg.className = "error";
-    return;
-  }
-
-  const qrImage = qrImgTag.src;
-  qrBox.appendChild(qrTemp);
-
-  /* ===== SEND EMAIL ===== */
+  /* ===== SEND EMAIL (QR TEXT ONLY) ===== */
   try {
     const emailRes = await fetch("/api/sendEmail", {
       method: "POST",
@@ -128,27 +136,27 @@ async function register() {
         name: name,
         email: email,
         reg_no: regNo,
-        qr_image: qrImage
+        qr_text: qrText   // 🔴 IMPORTANT FIX
       })
     });
 
-    const emailResult = await emailRes.json();
+    const result = await emailRes.json();
 
     if (!emailRes.ok) {
-      console.error("Email failed:", emailResult);
+      console.error(result);
       msg.innerText =
-        "⚠️ Registered successfully, but email failed. Please download the QR shown above.";
+        "⚠️ Registered successfully, but email failed. Please save the QR shown above.";
       msg.className = "error";
       return;
     }
 
-    msg.innerText = "✅ Registered successfully. QR sent to email.";
+    msg.innerText = "✅ Registered successfully. QR pass sent to email.";
     msg.className = "success";
 
   } catch (err) {
-    console.error("Email error:", err);
+    console.error(err);
     msg.innerText =
-      "⚠️ Registered successfully, but email could not be sent. Please download the QR shown above.";
+      "⚠️ Registered successfully, but email could not be sent. Please save the QR shown above.";
     msg.className = "error";
   }
 
