@@ -8,9 +8,9 @@
 
   <style>
     body {
+      font-family: Arial, sans-serif;
       background: #0B1C2D;
       color: white;
-      font-family: Arial;
       padding: 30px;
     }
     input {
@@ -29,16 +29,32 @@
     }
     .error { color: #ff8080; }
     .success { color: #9cff9c; }
+    nav a {
+      color: #C9A44C;
+      margin-right: 12px;
+      text-decoration: none;
+    }
   </style>
 </head>
 
 <body>
 
+<nav>
+  <a href="register.html">Register</a>
+  <a href="scan.html">Scan</a>
+  <a href="admin.html">Admin</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
+
 <h2>TANTRA 2026 – Registration</h2>
 
-<input id="nameInput" placeholder="Name"><br>
-<input id="emailInput" placeholder="Email"><br>
-<input id="regNoInput" placeholder="Register Number"><br>
+<input id="nameInput" placeholder="Name">
+<br>
+<input id="emailInput" placeholder="Email">
+<br>
+<input id="regNoInput" placeholder="Register Number">
+<br>
 
 <button onclick="register()">Register</button>
 
@@ -47,22 +63,47 @@
 
 <script>
 /* ================= SUPABASE ================= */
+const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
+
 const supabaseClient = supabase.createClient(
-  "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
+
+let createdByEmail = null;
+
+/* ========== LOAD SESSION ONCE (IMPORTANT) ========== */
+async function loadSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  createdByEmail = session.user.email;
+}
+
+loadSession();
 
 /* ================= REGISTER ================= */
 async function register() {
-  const name = document.getElementById("nameInput").value.trim();
-  const email = document.getElementById("emailInput").value.trim();
-  const regNo = document.getElementById("regNoInput").value.trim();
-
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const regNo = regNoInput.value.trim();
   const msg = document.getElementById("msg");
   const qrBox = document.getElementById("qrcode");
 
   msg.innerText = "";
+  msg.className = "";
   qrBox.innerHTML = "";
+
+  if (!createdByEmail) {
+    msg.innerText = "⚠️ Session not ready. Please refresh.";
+    msg.className = "error";
+    return;
+  }
 
   if (!name || !email || !regNo) {
     msg.innerText = "⚠️ All fields are required";
@@ -71,54 +112,77 @@ async function register() {
   }
 
   const qrText = crypto.randomUUID();
-  const entryId =
-    "T26-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
   /* ===== SAVE TO DATABASE ===== */
   const { error } = await supabaseClient
     .from("attendees")
     .insert({
-      name: name,
-      email: email,
+      name,
+      email,
       reg_no: regNo,
       qr: qrText,
-      entry_id: entryId,
-      status: "PENDING"
+      status: "PENDING",
+      created_by: createdByEmail
     });
 
   if (error) {
+    if (error.code === "23505") {
+      msg.innerText = "⚠️ Reg No already registered";
+      msg.className = "error";
+      return;
+    }
     msg.innerText = error.message;
     msg.className = "error";
     return;
   }
 
-  /* ===== SHOW QR ===== */
-  new QRCode(qrBox, {
-    text: qrText,
-    width: 200,
-    height: 200
-  });
+  /* ===== SHOW QR ON SCREEN ===== */
+  const qrDiv = document.createElement("div");
+  new QRCode(qrDiv, { text: qrText, width: 200, height: 200 });
+  qrBox.appendChild(qrDiv);
 
   /* ===== SEND EMAIL ===== */
-  await fetch("/api/sendEmail", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name: name,
-      email: email,
-      reg_no: regNo,
-      qr_text: qrText,
-      entry_id: entryId
-    })
-  });
+  try {
+    const res = await fetch("/api/sendEmail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        reg_no: regNo,
+        qr_text: qrText   // backend regenerates QR
+      })
+    });
 
-  msg.innerText = `✅ Registered successfully. Entry ID: ${entryId}`;
-  msg.className = "success";
+    const result = await res.json();
 
-  // clear inputs
-  document.getElementById("nameInput").value = "";
-  document.getElementById("emailInput").value = "";
-  document.getElementById("regNoInput").value = "";
+    if (!res.ok) {
+      console.error(result);
+      msg.innerText =
+        "⚠️ Registered, but email failed. Please save the QR shown above.";
+      msg.className = "error";
+      return;
+    }
+
+    msg.innerText = "✅ Registered successfully. QR sent to email.";
+    msg.className = "success";
+
+  } catch (err) {
+    console.error(err);
+    msg.innerText =
+      "⚠️ Registered, but email could not be sent. Please save the QR shown above.";
+    msg.className = "error";
+  }
+
+  nameInput.value = "";
+  emailInput.value = "";
+  regNoInput.value = "";
+}
+
+/* ================= LOGOUT ================= */
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
 }
 </script>
 
