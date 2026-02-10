@@ -87,12 +87,12 @@ export default async function handler(req, res) {
     doc
       .fillColor("#0B1C2D")
       .fontSize(28)
-      .text("EXCELLENCE CULTURAL ASSOCIATION 2026", 0, 155, { align: "center" });
+      .text("ECA 2026", 0, 155, { align: "center" });
 
     doc
       .fontSize(15)
       .fillColor("#C9A44C")
-      .text("TANTRA 2026 Fest – Entry Pass", { align: "center" });
+      .text("TANTRA Cultural Fest – Entry Pass", { align: "center" });
 
     doc.moveDown(0.8);
 
