@@ -31,14 +31,14 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           sender: {
             name: "TANTRA 2026",
-            email: "tickets.tantra26@gmail.com" // must be verified
+            email: "tickets.tantra26@gmail.com" // must be verified in Brevo
           },
           to: [{ email }],
           subject: "🎭 TANTRA 2026 | Entry Pass",
           htmlContent: `
             <p>Hello <b>${name}</b>,</p>
-            <p>Your <b>TANTRA 2026</b> entry pass is attached as a PDF.</p>
-            <p>Please read the rules carefully.</p>
+            <p>Your <b>TANTRA 2026</b> entry pass is attached.</p>
+            <p>Please carry this PDF to the event.</p>
             <p>— Team TANTRA 2026</p>
           `,
           attachment: [
@@ -64,17 +64,17 @@ export default async function handler(req, res) {
     const pageHeight = doc.page.height;
     const centerX = pageWidth / 2;
 
-    // Background
+    // Background (Royal Blue)
     doc.rect(0, 0, pageWidth, pageHeight).fill("#0B1C2D");
 
-    // GOLD BORDER FRAME
+    // Gold border frame
     doc
       .lineWidth(4)
       .strokeColor("#C9A44C")
       .rect(20, 20, pageWidth - 40, pageHeight - 40)
       .stroke();
 
-    // Gold header
+    // Gold header band
     doc.rect(20, 20, pageWidth - 40, 120).fill("#C9A44C");
 
     // Logo
@@ -87,14 +87,33 @@ export default async function handler(req, res) {
     doc
       .fillColor("#0B1C2D")
       .fontSize(28)
-      .text("TANTRA 2026", 0, 155, { align: "center" });
+      .text("EXCELLENCE CULTURAL ASSOCIATION 2026", 0, 155, { align: "center" });
 
     doc
       .fontSize(15)
       .fillColor("#C9A44C")
-      .text("Masquerade Cultural Fest – Entry Pass", { align: "center" });
+      .text("TANTRA 2026 Fest – Entry Pass", { align: "center" });
 
-    doc.moveDown(1.5);
+    doc.moveDown(0.8);
+
+    // Venue & Date (NEW)
+    doc
+      .fontSize(13)
+      .fillColor("white")
+      .text(
+        "Venue: Tamil Nadu Dr. Ambedkar Law University, Perungudi",
+        { align: "center" }
+      );
+
+    doc
+      .fontSize(13)
+      .fillColor("white")
+      .text(
+        "Date: 27 March 2026",
+        { align: "center" }
+      );
+
+    doc.moveDown(1.2);
 
     // Participant details
     doc
@@ -155,14 +174,6 @@ export default async function handler(req, res) {
           lineGap: 6
         }
       );
-
-    // Watermark
-    doc
-      .rotate(-30, { origin: [centerX, pageHeight / 2] })
-      .fontSize(60)
-      .fillColor("rgba(255,255,255,0.08)")
-      .text("TANTRA 2026", centerX - 200, pageHeight / 2)
-      .rotate(30, { origin: [centerX, pageHeight / 2] });
 
     doc.end();
 
