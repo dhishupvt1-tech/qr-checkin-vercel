@@ -64,7 +64,7 @@
       <th>Reg No</th>
       <th>Status</th>
       <th>Created By</th>
-      <th>QR</th>
+      <th>View QR</th>
     </tr>
   </thead>
   <tbody id="tableBody"></tbody>
@@ -91,12 +91,11 @@ async function checkAuth() {
 }
 checkAuth();
 
-/* ================= LOAD DATA ================= */
+/* ================= LOAD ATTENDEES ================= */
 async function loadAttendees() {
   const { data, error } = await supabaseClient
     .from("attendees")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("*");   // ✅ NO created_at used
 
   if (error) {
     alert(error.message);
