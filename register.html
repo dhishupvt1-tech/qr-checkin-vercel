@@ -1,39 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TANTRA 2026 | Registration</title>
+  <title>TANTRA 2026 | Register</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0B1C2D;
-      color: white;
-      padding: 30px;
-    }
-    input {
-      padding: 10px;
-      width: 280px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      border: none;
-    }
-    button {
-      padding: 10px 20px;
-      background: #C9A44C;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .error { color: #ff8080; }
-    .success { color: #9cff9c; }
-    nav a {
-      color: #C9A44C;
-      margin-right: 12px;
-      text-decoration: none;
-    }
+    body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
+    nav a { color:#C9A44C; margin-right:12px; text-decoration:none }
+    input { padding:10px; width:280px; margin-bottom:10px }
+    button { padding:10px 20px; background:#C9A44C; border:none; font-weight:bold }
   </style>
 </head>
 
@@ -43,18 +20,14 @@
   <a href="register.html">Register</a>
   <a href="scan.html">Scan</a>
   <a href="admin.html">Admin</a>
-  <a href="dashboard.html">Dashboard</a>
   <a href="#" onclick="logout()">Logout</a>
 </nav>
 
-<h2>TANTRA 2026 – Registration</h2>
+<h2>Register – TANTRA 2026</h2>
 
-<input id="nameInput" placeholder="Name">
-<br>
-<input id="emailInput" placeholder="Email">
-<br>
-<input id="regNoInput" placeholder="Register Number">
-<br>
+<input id="nameInput" placeholder="Name"><br>
+<input id="emailInput" placeholder="Email"><br>
+<input id="regNoInput" placeholder="Register No"><br>
 
 <button onclick="register()">Register</button>
 
@@ -62,124 +35,54 @@
 <div id="qrcode"></div>
 
 <script>
-/* ================= SUPABASE ================= */
-const SUPABASE_URL = "https://qwumwbmystwwhsjpllqn.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M";
-
 const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let createdByEmail = null;
-
-/* ========== LOAD SESSION ONCE (IMPORTANT) ========== */
-async function loadSession() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-
-  if (!session) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  createdByEmail = session.user.email;
-}
-
-loadSession();
-
-/* ================= REGISTER ================= */
 async function register() {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
   const regNo = regNoInput.value.trim();
-  const msg = document.getElementById("msg");
-  const qrBox = document.getElementById("qrcode");
-
-  msg.innerText = "";
-  msg.className = "";
-  qrBox.innerHTML = "";
-
-  if (!createdByEmail) {
-    msg.innerText = "⚠️ Session not ready. Please refresh.";
-    msg.className = "error";
-    return;
-  }
 
   if (!name || !email || !regNo) {
-    msg.innerText = "⚠️ All fields are required";
-    msg.className = "error";
+    msg.innerText = "All fields required";
     return;
   }
 
-  const qrText = crypto.randomUUID();
+  const qrValue = crypto.randomUUID();
+  const entryId = "T26-" + Math.random().toString(36).substring(2,8).toUpperCase();
 
-  /* ===== SAVE TO DATABASE ===== */
-  const { error } = await supabaseClient
-    .from("attendees")
-    .insert({
-      name,
-      email,
-      reg_no: regNo,
-      qr: qrText,
-      status: "PENDING",
-      created_by: createdByEmail
-    });
+  const { error } = await supabaseClient.from("attendees").insert({
+    name,
+    email,
+    reg_no: regNo,
+    qr: qrValue,
+    entry_id: entryId,
+    status: "PENDING"
+  });
 
   if (error) {
-    if (error.code === "23505") {
-      msg.innerText = "⚠️ Reg No already registered";
-      msg.className = "error";
-      return;
-    }
     msg.innerText = error.message;
-    msg.className = "error";
     return;
   }
 
-  /* ===== SHOW QR ON SCREEN ===== */
-  const qrDiv = document.createElement("div");
-  new QRCode(qrDiv, { text: qrText, width: 200, height: 200 });
-  qrBox.appendChild(qrDiv);
+  qrcode.innerHTML = "";
+  new QRCode(qrcode, { text: qrValue, width:200, height:200 });
 
-  /* ===== SEND EMAIL ===== */
-  try {
-    const res = await fetch("/api/sendEmail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        reg_no: regNo,
-        qr_text: qrText   // backend regenerates QR
-      })
-    });
+  await fetch("/api/sendEmail", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      name, email, reg_no: regNo,
+      qr_text: qrValue,
+      entry_id: entryId
+    })
+  });
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      console.error(result);
-      msg.innerText =
-        "⚠️ Registered, but email failed. Please save the QR shown above.";
-      msg.className = "error";
-      return;
-    }
-
-    msg.innerText = "✅ Registered successfully. QR sent to email.";
-    msg.className = "success";
-
-  } catch (err) {
-    console.error(err);
-    msg.innerText =
-      "⚠️ Registered, but email could not be sent. Please save the QR shown above.";
-    msg.className = "error";
-  }
-
-  nameInput.value = "";
-  emailInput.value = "";
-  regNoInput.value = "";
+  msg.innerText = `Registered successfully. Entry ID: ${entryId}`;
 }
 
-/* ================= LOGOUT ================= */
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
