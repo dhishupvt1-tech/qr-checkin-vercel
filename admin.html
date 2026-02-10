@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>TANTRA 2026 | Admin Dashboard</title>
-
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
@@ -64,7 +63,7 @@
       <th>Reg No</th>
       <th>Status</th>
       <th>Created By</th>
-      <th>View QR</th>
+      <th>QR</th>
     </tr>
   </thead>
   <tbody id="tableBody"></tbody>
@@ -91,11 +90,11 @@ async function checkAuth() {
 }
 checkAuth();
 
-/* ================= LOAD ATTENDEES ================= */
+/* ================= LOAD DATA ================= */
 async function loadAttendees() {
   const { data, error } = await supabaseClient
     .from("attendees")
-    .select("*");   // ✅ NO created_at used
+    .select("*");
 
   if (error) {
     alert(error.message);
@@ -115,7 +114,9 @@ async function loadAttendees() {
       <td>${a.status}</td>
       <td>${a.created_by || "-"}</td>
       <td>
-        <button onclick="viewQR('${a.qr}')">View QR</button>
+        <button onclick="viewQR('${encodeURIComponent(a.qr)}')">
+          View QR
+        </button>
       </td>
     `;
 
@@ -126,8 +127,8 @@ async function loadAttendees() {
 loadAttendees();
 
 /* ================= VIEW QR ================= */
-function viewQR(qrValue) {
-  window.open(`view-qr.html?qr=${qrValue}`, "_blank");
+function viewQR(encodedQR) {
+  window.open(`view-qr.html?qr=${encodedQR}`, "_blank");
 }
 
 /* ================= LOGOUT ================= */
