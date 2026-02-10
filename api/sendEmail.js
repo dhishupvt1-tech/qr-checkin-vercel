@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { name, email, reg_no, qr_text, event_id } = req.body;
+  const { name, email, reg_no, qr_text } = req.body;
 
   if (!name || !email || !reg_no || !qr_text) {
     return res.status(400).json({ error: "Missing fields" });
@@ -91,8 +91,7 @@ export default async function handler(req, res) {
     doc.fontSize(13).fillColor("white")
       .text(`Name: ${name}`, { align: "center" })
       .text(`Reg No: ${reg_no}`, { align: "center" })
-      .text(`Email: ${email}`, { align: "center" })
-      .text(`Entry_ID: ${entry_id}`, { align: "center" });
+      .text(`Email: ${email}`, { align: "center" });
 
     /* ================= QR (BACKEND GENERATED) ================= */
     const qrDataUrl = await QRCode.toDataURL(qr_text, {
