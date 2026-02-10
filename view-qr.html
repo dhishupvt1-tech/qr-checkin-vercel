@@ -1,54 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>View QR</title>
-
+  <title>View QR – TANTRA 2026</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #0B1C2D;
-      color: white;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
+      margin: 0;
     }
-    .box {
-      border: 3px solid #C9A44C;
+    .card {
+      background: white;
       padding: 30px;
+      border-radius: 10px;
       text-align: center;
-      border-radius: 8px;
-      background: #11263f;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      max-width: 380px;
     }
     h2 {
-      color: #C9A44C;
-      margin-bottom: 20px;
+      margin-top: 0;
+      color: #0B1C2D;
+    }
+    #qrcode {
+      margin: 20px auto;
+    }
+    .hint {
+      font-size: 12px;
+      color: #444;
+      word-break: break-all;
     }
   </style>
 </head>
 
 <body>
 
-<div class="box">
-  <h2>TANTRA 2026 – QR Code</h2>
+<div class="card">
+  <h2>TANTRA 2026 – Entry QR</h2>
   <div id="qrcode"></div>
+  <div class="hint"></div>
 </div>
 
 <script>
   const params = new URLSearchParams(window.location.search);
-  const qrValue = params.get("qr");
+  const encodedQR = params.get("qr");
 
-  if (!qrValue) {
-    document.body.innerHTML = "<h3>Invalid QR</h3>";
+  if (!encodedQR) {
+    document.body.innerHTML =
+      "<h3 style='color:white'>Invalid QR</h3>";
   } else {
+    const qrValue = decodeURIComponent(encodedQR);
+
     new QRCode(document.getElementById("qrcode"), {
       text: qrValue,
-      width: 220,
-      height: 220
+      width: 300,
+      height: 300,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
     });
+
+    // Optional debug (remove later)
+    document.querySelector(".hint").innerText =
+      "QR Value: " + qrValue;
   }
 </script>
 
