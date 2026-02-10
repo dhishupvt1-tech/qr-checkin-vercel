@@ -1,32 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Scan</title>
+  <title>TANTRA 2026 | Scan</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body { font-family: Arial; }
-    .card { border:1px solid #ccc; padding:12px; margin-top:10px; width:320px; }
-    .error { color:red; }
-    .success { color:green; }
-    button { padding:8px 14px; margin-top:6px; }
+    body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
+    nav a { color:#C9A44C; margin-right:12px; text-decoration:none }
+    button { padding:8px 14px; background:#C9A44C; border:none; margin-right:10px }
+    input { padding:8px; width:260px }
   </style>
 </head>
 
 <body>
 
-<nav style="margin-bottom:15px">
-  <a href="register.html">Register</a> |
-  <a href="scan.html">Scan</a> |
-  <a href="admin.html">Admin</a> |
-  <a href="#" onclick="logout()">Logout</a>
+<nav>
+  <a href="register.html">Register</a>
+  <a href="scan.html">Scan</a>
+  <a href="admin.html">Admin</a>
 </nav>
 
-<h2>Scan QR</h2>
+<h2>Scan / Manual Check</h2>
 
 <div id="reader" style="width:300px"></div>
+
+<h4>Manual Entry ID</h4>
+<input id="entryIdInput" placeholder="T26-XXXXXX">
+<button onclick="manualLookup()">Lookup</button>
+
 <div id="result"></div>
 
 <script>
@@ -35,95 +38,52 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let current = null;
-let locked = false;
-
-function normalize(text) {
-  return text.replace(/\s+/g, "").replace(/\u200B/g, "");
+async function handleRecord(data) {
+  result.innerHTML = `
+    <p><b>${data.name}</b></p>
+    <p>${data.email}</p>
+    <p>Reg No: ${data.reg_no}</p>
+    <p>Entry ID: ${data.entry_id}</p>
+    <p>Status: ${data.status}</p>
+    <button onclick="updateStatus('${data.entry_id}','CHECKED_IN')">Check In</button>
+    <button onclick="updateStatus('${data.entry_id}','REJECTED')">Reject</button>
+  `;
 }
 
-async function onScanSuccess(text) {
-  if (locked) return;
-  locked = true;
+async function updateStatus(id, status) {
+  await supabaseClient.from("attendees")
+    .update({ status })
+    .eq("entry_id", id);
+  alert(`Status updated: ${status}`);
+}
 
-  const qr = normalize(text);
-
+async function manualLookup() {
+  const id = entryIdInput.value.trim().toUpperCase();
   const { data } = await supabaseClient
     .from("attendees")
     .select("*")
-    .eq("qr", qr)
+    .eq("entry_id", id)
     .single();
 
   if (!data) {
-    result.innerHTML = `<p class="error">❌ QR Not Found</p>`;
-    unlock();
+    alert("Invalid Entry ID");
     return;
   }
-
-  // Always show data
-  let info = `
-    <div class="card">
-      <b>Name:</b> ${data.name}<br>
-      <b>Email:</b> ${data.email}<br>
-      <b>Reg No:</b> ${data.reg_no}<br>
-      <b>Status:</b> ${data.status}<br><br>
-  `;
-
-  if (data.status === "CHECKED_IN") {
-    result.innerHTML = info + `<span class="success">⚠️ Already Checked In</span></div>`;
-    unlock();
-    return;
-  }
-
-  if (data.status === "REJECTED") {
-    result.innerHTML = info + `<span class="error">❌ Entry Rejected</span></div>`;
-    unlock();
-    return;
-  }
-
-  current = data;
-
-  result.innerHTML = info + `
-      <button onclick="checkIn()">✅ Check In</button>
-      <button onclick="rejectEntry()">❌ Reject</button>
-    </div>
-  `;
-
-  unlock();
-}
-
-async function checkIn() {
-  await supabaseClient
-    .from("attendees")
-    .update({ status: "CHECKED_IN" })
-    .eq("id", current.id);
-
-  result.innerHTML = `<p class="success">✅ Checked In</p>`;
-}
-
-async function rejectEntry() {
-  await supabaseClient
-    .from("attendees")
-    .update({ status: "REJECTED" })
-    .eq("id", current.id);
-
-  result.innerHTML = `<p class="error">❌ Rejected</p>`;
-}
-
-function unlock() {
-  setTimeout(() => locked = false, 2000);
+  handleRecord(data);
 }
 
 new Html5Qrcode("reader").start(
   { facingMode:"environment" },
   { fps:10, qrbox:250 },
-  onScanSuccess
+  async qrText => {
+    const { data } = await supabaseClient
+      .from("attendees")
+      .select("*")
+      .eq("qr", qrText)
+      .single();
+    if (data) handleRecord(data);
+  }
 );
-
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
-}
 </script>
 
 </body>
