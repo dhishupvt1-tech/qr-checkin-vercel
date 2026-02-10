@@ -1,4 +1,6 @@
 import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,15 +14,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    /* ================= CREATE PDF ================= */
-    const doc = new PDFDocument({ size: "A4", margin: 50 });
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
     let buffers = [];
     doc.on("data", buffers.push.bind(buffers));
+
     doc.on("end", async () => {
       const pdfBuffer = Buffer.concat(buffers);
       const pdfBase64 = pdfBuffer.toString("base64");
 
-      /* ================= SEND EMAIL ================= */
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
@@ -30,30 +31,28 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           sender: {
             name: "TANTRA 2026",
-            email: "tickets.tantra26@gmail.com" // 🔴 must be verified
+            email: "tickets.tantra26@gmail.com" // must be verified
           },
           to: [{ email }],
-          subject: "🎭 TANTRA 2026 | Your Entry QR Pass",
+          subject: "🎭 TANTRA 2026 | Entry Pass",
           htmlContent: `
             <p>Hello <b>${name}</b>,</p>
-            <p>Your entry pass for <b>TANTRA 2026</b> is attached as a PDF.</p>
-            <p>Please download and show it at the entry.</p>
-            <p><b>Reg No:</b> ${reg_no}</p>
+            <p>Your <b>TANTRA 2026</b> entry pass is attached as a PDF.</p>
+            <p>Please read the rules carefully.</p>
             <p>— Team TANTRA 2026</p>
           `,
           attachment: [
             {
-              name: `TANTRA_2026_QR_${reg_no}.pdf`,
+              name: `TANTRA_2026_PASS_${reg_no}.pdf`,
               content: pdfBase64
             }
           ]
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        return res.status(400).json({ error: "Brevo rejected", data });
+        const err = await response.json();
+        return res.status(400).json({ error: "Brevo rejected", err });
       }
 
       return res.status(200).json({ success: true });
@@ -61,47 +60,109 @@ export default async function handler(req, res) {
 
     /* ================= PDF DESIGN ================= */
 
-    // Background colour band
-    doc.rect(0, 0, 600, 120).fill("#6A0DAD");
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const centerX = pageWidth / 2;
+
+    // Background
+    doc.rect(0, 0, pageWidth, pageHeight).fill("#0B1C2D");
+
+    // GOLD BORDER FRAME
+    doc
+      .lineWidth(4)
+      .strokeColor("#C9A44C")
+      .rect(20, 20, pageWidth - 40, pageHeight - 40)
+      .stroke();
+
+    // Gold header
+    doc.rect(20, 20, pageWidth - 40, 120).fill("#C9A44C");
+
+    // Logo
+    const logoPath = path.join(process.cwd(), "api", "logo.png");
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, centerX - 45, 35, { width: 90 });
+    }
+
+    // Title
+    doc
+      .fillColor("#0B1C2D")
+      .fontSize(28)
+      .text("TANTRA 2026", 0, 155, { align: "center" });
 
     doc
+      .fontSize(15)
+      .fillColor("#C9A44C")
+      .text("Masquerade Cultural Fest – Entry Pass", { align: "center" });
+
+    doc.moveDown(1.5);
+
+    // Participant details
+    doc
+      .fontSize(15)
       .fillColor("white")
-      .fontSize(30)
-      .text("TANTRA 2026", 50, 40);
+      .text(`Name: ${name}`, { align: "center" });
 
-    doc
-      .fontSize(14)
-      .text("Cultural Fest Entry Pass", 50, 80);
+    doc.text(`Reg No: ${reg_no}`, { align: "center" });
+    doc.text(`Email: ${email}`, { align: "center" });
 
-    doc.moveDown(3);
+    doc.moveDown(1.5);
 
-    doc
-      .fillColor("#000")
-      .fontSize(16)
-      .text(`Name: ${name}`);
-
-    doc.text(`Reg No: ${reg_no}`);
-    doc.text(`Email: ${email}`);
-
-    doc.moveDown(2);
-
-    // QR Image
+    // QR Code
     const base64Data = qr_image.replace(/^data:image\/png;base64,/, "");
     const qrBuffer = Buffer.from(base64Data, "base64");
 
-    doc.image(qrBuffer, {
-      fit: [220, 220],
-      align: "center"
-    });
+    doc.image(qrBuffer, centerX - 105, doc.y, { width: 210 });
 
-    doc.moveDown(2);
+    doc.moveDown(1.2);
 
     doc
       .fontSize(12)
-      .fillColor("gray")
-      .text("Show this QR code at the entry gate", {
-        align: "center"
-      });
+      .fillColor("#C9A44C")
+      .text("Show this QR code at the entry gate", { align: "center" });
+
+    doc.moveDown(1.5);
+
+    /* ================= RULES BOX ================= */
+
+    const rulesY = doc.y;
+    doc
+      .lineWidth(1.5)
+      .strokeColor("#C9A44C")
+      .rect(60, rulesY, pageWidth - 120, 220)
+      .stroke();
+
+    doc
+      .fontSize(14)
+      .fillColor("#C9A44C")
+      .text("ENTRY RULES", 0, rulesY + 10, { align: "center" });
+
+    doc
+      .fontSize(12)
+      .fillColor("white")
+      .text(
+`1. Entry is permitted for ONE person only.
+2. No re-entry is allowed.
+3. Admission is reserved with the Committee and Faculty Coordinators.
+4. No vehicle parking is allowed inside the campus.
+5. Only the SIDE GATE shall be accessed by students.
+6. Gates open at 8:00 AM and close at 11:00 AM sharp.
+7. ID cards MUST be carried; entry will be rejected otherwise.`,
+        80,
+        rulesY + 45,
+        {
+          width: pageWidth - 160,
+          align: "left",
+          lineGap: 6
+        }
+      );
+
+    // Watermark
+    doc
+      .rotate(-30, { origin: [centerX, pageHeight / 2] })
+      .fontSize(60)
+      .fillColor("rgba(255,255,255,0.08)")
+      .text("TANTRA 2026", centerX - 200, pageHeight / 2)
+      .rotate(30, { origin: [centerX, pageHeight / 2] });
 
     doc.end();
 
