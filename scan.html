@@ -3,17 +3,44 @@
 <head>
   <title>TANTRA 2026 | Scan</title>
 
+  <!-- Supabase + Auth Guard -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
+
+  <!-- QR Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
-    nav a { color:#C9A44C; margin-right:12px; text-decoration:none }
-    button { padding:8px 14px; background:#C9A44C; border:none; font-weight:bold }
-    .success { color:#9cff9c }
-    .error { color:#ff8080 }
-    .box { margin-top:20px; padding:15px; border:1px solid #444 }
+    body {
+      background:#0B1C2D;
+      color:white;
+      font-family:Arial;
+      padding:30px;
+    }
+    nav a {
+      color:#C9A44C;
+      margin-right:12px;
+      text-decoration:none;
+    }
+    button {
+      padding:8px 14px;
+      background:#C9A44C;
+      border:none;
+      font-weight:bold;
+      margin-right:10px;
+      cursor:pointer;
+    }
+    input {
+      padding:8px;
+      width:260px;
+    }
+    .success { color:#9cff9c; }
+    .error { color:#ff8080; }
+    .box {
+      margin-top:20px;
+      padding:15px;
+      border:1px solid #444;
+    }
   </style>
 </head>
 
@@ -27,9 +54,14 @@
   <a href="#" onclick="logout()">Logout</a>
 </nav>
 
-<h2>Scan – TANTRA 2026</h2>
+<h2>Scan / Manual Entry – TANTRA 2026</h2>
 
 <div id="reader" style="width:300px"></div>
+
+<h4>Manual Entry ID</h4>
+<input id="entryIdInput" placeholder="T26-XXXXXX">
+<button onclick="manualLookup()">Lookup</button>
+
 <div id="result" class="box"></div>
 
 <script>
@@ -38,11 +70,99 @@ const supabaseClient = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
+let currentRecord = null;
+let qrScanner = null;
+
+/* 🔐 AUTH FIRST, THEN INIT PAGE */
 (async () => {
   const user = await requireAuth(supabaseClient);
   if (!user) return;
+
+  initScanner();
 })();
 
+/* ===== INIT QR SCANNER ===== */
+function initScanner() {
+  qrScanner = new Html5Qrcode("reader");
+
+  qrScanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    async qrText => {
+      const { data } = await supabaseClient
+        .from("attendees")
+        .select("*")
+        .eq("qr", qrText)
+        .single();
+
+      if (!data) {
+        result.innerHTML = `<p class="error">❌ QR not found</p>`;
+        return;
+      }
+
+      renderRecord(data);
+    }
+  );
+}
+
+/* ===== RENDER RECORD ===== */
+function renderRecord(data) {
+  currentRecord = data;
+
+  let statusMsg = "";
+  let actions = "";
+
+  if (data.status === "PENDING") {
+    actions = `
+      <button onclick="updateStatus('CHECKED_IN')">✅ Check In</button>
+      <button onclick="updateStatus('REJECTED')">❌ Reject</button>
+    `;
+  } else if (data.status === "CHECKED_IN") {
+    statusMsg = `<p class="success">✅ Already Checked In</p>`;
+  } else {
+    statusMsg = `<p class="error">❌ Entry Rejected</p>`;
+  }
+
+  result.innerHTML = `
+    <p><b>${data.name}</b></p>
+    <p>${data.email}</p>
+    <p>Reg No: ${data.reg_no}</p>
+    <p>Entry ID: ${data.entry_id}</p>
+    ${statusMsg}
+    ${actions}
+  `;
+}
+
+/* ===== UPDATE STATUS ===== */
+async function updateStatus(newStatus) {
+  await supabaseClient
+    .from("attendees")
+    .update({ status: newStatus })
+    .eq("entry_id", currentRecord.entry_id);
+
+  currentRecord.status = newStatus;
+  renderRecord(currentRecord);
+}
+
+/* ===== MANUAL LOOKUP ===== */
+async function manualLookup() {
+  const id = entryIdInput.value.trim().toUpperCase();
+
+  const { data } = await supabaseClient
+    .from("attendees")
+    .select("*")
+    .eq("entry_id", id)
+    .single();
+
+  if (!data) {
+    result.innerHTML = `<p class="error">❌ Invalid Entry ID</p>`;
+    return;
+  }
+
+  renderRecord(data);
+}
+
+/* ===== LOGOUT ===== */
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = "login.html";
