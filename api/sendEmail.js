@@ -8,9 +8,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { name, email, reg_no, qr_text } = req.body;
+  // 🔥 ENTRY ID ADDED HERE
+  const { name, email, reg_no, qr_text, entry_id } = req.body;
 
-  if (!name || !email || !reg_no || !qr_text) {
+  if (!name || !email || !reg_no || !qr_text || !entry_id) {
     return res.status(400).json({ error: "Missing fields" });
   }
 
@@ -38,8 +39,9 @@ export default async function handler(req, res) {
           subject: "🎭 TANTRA 2026 | Entry Pass",
           htmlContent: `
             <p>Hello <b>${name}</b>,</p>
-            <p>Your TANTRA 2026 entry pass is attached.</p>
-            <p>Please show the QR at the entry gate.</p>
+            <p>Your <b>TANTRA 2026</b> entry pass is attached.</p>
+            <p><b>ENTRY ID:</b> <span style="font-size:16px">${entry_id}</span></p>
+            <p>Please show the QR code or mention the Entry ID at the entry gate.</p>
           `,
           attachment: [{
             name: `TANTRA_2026_PASS_${reg_no}.pdf`,
@@ -93,7 +95,14 @@ export default async function handler(req, res) {
       .text(`Reg No: ${reg_no}`, { align: "center" })
       .text(`Email: ${email}`, { align: "center" });
 
-    /* ================= QR (BACKEND GENERATED) ================= */
+    /* ================= ENTRY ID (🔥 NEW 🔥) ================= */
+    doc.moveDown(0.4);
+    doc
+      .fontSize(15)
+      .fillColor("#C9A44C")
+      .text(`ENTRY ID: ${entry_id}`, { align: "center" });
+
+    /* ================= QR ================= */
     const qrDataUrl = await QRCode.toDataURL(qr_text, {
       errorCorrectionLevel: "H",
       margin: 1,
@@ -108,7 +117,7 @@ export default async function handler(req, res) {
 
     doc.moveDown(0.6);
     doc.fontSize(10).fillColor("#C9A44C")
-      .text("Show this QR code at the entry gate", { align: "center" });
+      .text("Show this QR code OR mention Entry ID at the entry gate", { align: "center" });
 
     /* ================= RULES ================= */
     doc.moveDown(0.8);
@@ -155,6 +164,7 @@ export default async function handler(req, res) {
     doc.end();
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 }
