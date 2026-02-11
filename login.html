@@ -1,18 +1,159 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login</title>
+  <title>TANTRA 2026 | Login</title>
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    body{
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-family:'Segoe UI',sans-serif;
+      background:linear-gradient(135deg,#0B1C2D,#11263F);
+      overflow:hidden;
+    }
+
+    /* Floating glow background */
+    body::before{
+      content:"";
+      position:absolute;
+      width:500px;
+      height:500px;
+      background:#C9A44C;
+      filter:blur(180px);
+      opacity:0.2;
+      top:-150px;
+      left:-150px;
+    }
+
+    .login-card{
+      width:400px;
+      padding:50px 40px;
+      background:rgba(255,255,255,0.05);
+      backdrop-filter:blur(20px);
+      border-radius:16px;
+      box-shadow:0 20px 40px rgba(0,0,0,0.4);
+      animation:fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(20px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    h2{
+      text-align:center;
+      margin-bottom:35px;
+      color:#C9A44C;
+      font-weight:600;
+      letter-spacing:1px;
+    }
+
+    .input-group{
+      margin-bottom:20px;
+    }
+
+    input{
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:8px;
+      font-size:14px;
+      outline:none;
+      background:#1e3b5f;
+      color:white;
+      transition:0.3s;
+    }
+
+    input:focus{
+      box-shadow:0 0 0 2px #C9A44C;
+      transform:scale(1.02);
+    }
+
+    button{
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:8px;
+      background:#C9A44C;
+      color:black;
+      font-weight:bold;
+      font-size:15px;
+      cursor:pointer;
+      transition:0.3s;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+    }
+
+    button:hover{
+      transform:scale(1.03);
+      box-shadow:0 8px 20px rgba(201,164,76,0.4);
+    }
+
+    .loader{
+      width:18px;
+      height:18px;
+      border:2px solid black;
+      border-top:2px solid transparent;
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+      display:none;
+    }
+
+    @keyframes spin{
+      to{transform:rotate(360deg)}
+    }
+
+    #msg{
+      margin-top:15px;
+      text-align:center;
+      font-size:13px;
+      min-height:18px;
+    }
+
+    .error{color:#ff6b6b}
+    .success{color:#9cff9c}
+
+    @media(max-width:480px){
+      .login-card{
+        width:90%;
+        padding:40px 25px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Login</h2>
+<div class="login-card">
 
-<input id="email" placeholder="Email"><br><br>
-<input id="password" type="password" placeholder="Password"><br><br>
-<button onclick="login()">Login</button>
+  <h2>TANTRA 2026</h2>
 
-<p id="msg"></p>
+  <div class="input-group">
+    <input id="email" placeholder="Email">
+  </div>
+
+  <div class="input-group">
+    <input id="password" type="password" placeholder="Password">
+  </div>
+
+  <button onclick="login()">
+    Login
+    <div class="loader" id="loader"></div>
+  </button>
+
+  <p id="msg"></p>
+
+</div>
 
 <script>
 const supabaseClient = supabase.createClient(
@@ -21,19 +162,34 @@ const supabaseClient = supabase.createClient(
 );
 
 async function login() {
-  msg.innerText = "Logging in...";
+
+  const msg = document.getElementById("msg");
+  const loader = document.getElementById("loader");
+
+  msg.innerText = "";
+  msg.className = "";
+
+  loader.style.display = "inline-block";
 
   const { error } = await supabaseClient.auth.signInWithPassword({
     email: email.value,
     password: password.value
   });
 
+  loader.style.display = "none";
+
   if (error) {
     msg.innerText = error.message;
+    msg.className = "error";
     return;
   }
 
-  window.location.href = "register.html";
+  msg.innerText = "Login successful";
+  msg.className = "success";
+
+  setTimeout(()=>{
+    window.location.href = "register.html";
+  },800);
 }
 </script>
 
