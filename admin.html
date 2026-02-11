@@ -31,7 +31,7 @@
 
     .container{
       padding:40px;
-      max-width:1400px;
+      max-width:1500px;
       margin:auto;
     }
 
@@ -46,7 +46,7 @@
 
     input{
       padding:10px;
-      width:300px;
+      width:320px;
       border-radius:6px;
       border:none;
     }
@@ -60,6 +60,7 @@
       padding:10px;
       border:1px solid #1e3b5f;
       text-align:center;
+      font-size:14px;
     }
 
     th{
@@ -71,6 +72,7 @@
       padding:4px 10px;
       border-radius:6px;
       font-size:12px;
+      font-weight:bold;
     }
 
     .PENDING{background:#FFC107;color:black}
@@ -84,12 +86,13 @@
       cursor:pointer;
       border-radius:4px;
       font-weight:bold;
+      font-size:12px;
     }
 
     .btn-check{background:#4CAF50;color:white}
     .btn-reject{background:#F44336;color:white}
     .btn-delete{background:#555;color:white}
-    .btn-qr{background:#C9A44C}
+    .btn-qr{background:#C9A44C;color:black}
   </style>
 </head>
 
@@ -123,6 +126,7 @@
       <th>Entry ID</th>
       <th>Status</th>
       <th>Created By</th>
+      <th>Created At</th>
       <th>Actions</th>
     </tr>
   </thead>
@@ -146,6 +150,7 @@ let allData = [];
 })();
 
 async function loadData() {
+
   const { data, error } = await supabaseClient
     .from("attendees")
     .select("*")
@@ -161,10 +166,16 @@ async function loadData() {
 }
 
 function renderTable(data) {
+
   const tbody = document.getElementById("tbody");
   tbody.innerHTML = "";
 
   data.forEach(a => {
+
+    const formattedDate = a.created_at
+      ? new Date(a.created_at).toLocaleString()
+      : "-";
+
     tbody.innerHTML += `
       <tr>
         <td>${a.name}</td>
@@ -173,6 +184,7 @@ function renderTable(data) {
         <td>${a.entry_id}</td>
         <td><span class="badge ${a.status}">${a.status}</span></td>
         <td>${a.created_by || "-"}</td>
+        <td>${formattedDate}</td>
         <td>
           <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
           <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
@@ -183,8 +195,9 @@ function renderTable(data) {
   });
 }
 
-/* 🔥 SEARCH LOGIC */
+/* 🔎 SEARCH */
 document.getElementById("searchInput").addEventListener("input", function(){
+
   const value = this.value.toLowerCase();
 
   const filtered = allData.filter(a =>
