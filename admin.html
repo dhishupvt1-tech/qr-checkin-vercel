@@ -6,124 +6,97 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
 
     body{
-      background:linear-gradient(135deg,#0B1C2D,#081522);
-      font-family:'Poppins',sans-serif;
+      background:#0B1C2D;
+      font-family:Arial;
       color:white;
       min-height:100vh;
     }
 
-    .page{min-height:100vh;display:flex;flex-direction:column}
-
     .navbar{
       display:flex;
       justify-content:space-between;
-      align-items:center;
-      padding:18px 40px;
+      padding:20px 40px;
       background:#11263F;
     }
 
     .navbar a{
       color:#C9A44C;
       text-decoration:none;
-      margin-left:20px;
+      margin-left:18px;
     }
 
-    .content{
-      flex:1;
+    .container{
       padding:40px;
       max-width:1400px;
       margin:auto;
-      width:100%;
     }
 
     h2{
-      font-family:'Playfair Display',serif;
+      margin-bottom:20px;
       color:#C9A44C;
-      margin-bottom:25px;
     }
 
-    .controls{
-      display:flex;
-      gap:15px;
-      margin-bottom:25px;
-      flex-wrap:wrap;
+    .search-box{
+      margin-bottom:20px;
     }
 
-    input, select{
-      padding:10px 14px;
-      border-radius:8px;
+    input{
+      padding:10px;
+      width:300px;
+      border-radius:6px;
       border:none;
-      min-width:200px;
-    }
-
-    .table-wrapper{
-      background:#11263F;
-      border-radius:12px;
-      overflow:auto;
     }
 
     table{
       width:100%;
       border-collapse:collapse;
-      min-width:1100px;
     }
 
     th,td{
-      padding:14px;
+      padding:10px;
+      border:1px solid #1e3b5f;
       text-align:center;
     }
 
     th{
-      background:#0f2136;
+      background:#11263F;
       color:#C9A44C;
-      position:sticky;
-      top:0;
-    }
-
-    tr:hover{
-      background:#1b3556;
     }
 
     .badge{
-      padding:6px 10px;
+      padding:4px 10px;
       border-radius:6px;
       font-size:12px;
-      font-weight:600;
     }
 
-    .pending{background:#FFC107;color:black}
-    .checked{background:#4CAF50;color:white}
-    .rejected{background:#F44336;color:white}
+    .PENDING{background:#FFC107;color:black}
+    .CHECKED_IN{background:#4CAF50}
+    .REJECTED{background:#F44336}
 
-    .action-btn{
+    button{
       padding:6px 10px;
-      border:none;
-      border-radius:6px;
-      font-size:12px;
-      font-weight:600;
-      cursor:pointer;
       margin:2px;
+      border:none;
+      cursor:pointer;
+      border-radius:4px;
+      font-weight:bold;
     }
 
-    .check-btn{background:#4CAF50;color:white}
-    .reject-btn{background:#F44336;color:white}
-    .delete-btn{background:#777;color:white}
-    .qr-btn{background:#C9A44C;color:black}
-
+    .btn-check{background:#4CAF50;color:white}
+    .btn-reject{background:#F44336;color:white}
+    .btn-delete{background:#555;color:white}
+    .btn-qr{background:#C9A44C}
   </style>
 </head>
 
 <body>
-<div class="page">
 
 <nav class="navbar">
-  <div style="font-family:'Playfair Display',serif;color:#C9A44C">TANTRA 2026</div>
+  <div>TANTRA 2026</div>
   <div>
     <a href="register.html">Register</a>
     <a href="scan.html">Scan</a>
@@ -133,21 +106,14 @@
   </div>
 </nav>
 
-<div class="content">
+<div class="container">
 
-<h2>Admin Control Panel</h2>
+<h2>Admin Panel</h2>
 
-<div class="controls">
-  <input type="text" id="searchInput" placeholder="Search..." oninput="applyFilters()">
-  <select id="statusFilter" onchange="applyFilters()">
-    <option value="ALL">All Status</option>
-    <option value="PENDING">Pending</option>
-    <option value="CHECKED_IN">Checked In</option>
-    <option value="REJECTED">Rejected</option>
-  </select>
+<div class="search-box">
+  <input id="searchInput" placeholder="Search name / email / reg no / entry id">
 </div>
 
-<div class="table-wrapper">
 <table>
   <thead>
     <tr>
@@ -162,107 +128,103 @@
   </thead>
   <tbody id="tbody"></tbody>
 </table>
-</div>
 
-</div>
 </div>
 
 <script>
-const supabaseClient=supabase.createClient(
-"https://qwumwbmystwwhsjpllqn.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+const supabaseClient = supabase.createClient(
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let allData=[];
+let allData = [];
 
-(async()=>{
-const user=await requireAuth(supabaseClient);
-if(!user)return;
-loadAdminData();
+(async () => {
+  const user = await requireAuth(supabaseClient);
+  if (!user) return;
+  loadData();
 })();
 
-async function loadAdminData(){
+async function loadData() {
+  const { data, error } = await supabaseClient
+    .from("attendees")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-const {data,error}=await supabaseClient
-.from("attendees")
-.select("*")
-.order("entry_id",{ascending:false}); // 🔥 Stable order
+  if (error) {
+    alert(error.message);
+    return;
+  }
 
-if(error){alert(error.message);return;}
-
-allData=data;
-applyFilters();
+  allData = data;
+  renderTable(data);
 }
 
-function renderTable(data){
+function renderTable(data) {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
 
-const tbody=document.getElementById("tbody");
-tbody.innerHTML="";
-
-data.forEach(a=>{
-
-let badgeClass="";
-if(a.status==="PENDING")badgeClass="pending";
-if(a.status==="CHECKED_IN")badgeClass="checked";
-if(a.status==="REJECTED")badgeClass="rejected";
-
-tbody.innerHTML+=`
-<tr>
-<td>${a.name}</td>
-<td>${a.email}</td>
-<td>${a.reg_no}</td>
-<td>${a.entry_id}</td>
-<td><span class="badge ${badgeClass}">${a.status}</span></td>
-<td>${a.created_by || "-"}</td>
-<td>
-  <button class="action-btn check-btn" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✓</button>
-  <button class="action-btn reject-btn" onclick="updateStatus('${a.entry_id}','REJECTED')">✕</button>
-  <button class="action-btn qr-btn" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
-  <button class="action-btn delete-btn" onclick="deleteAttendee('${a.entry_id}')">Delete</button>
-</td>
-</tr>`;
-});
+  data.forEach(a => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${a.name}</td>
+        <td>${a.email}</td>
+        <td>${a.reg_no}</td>
+        <td>${a.entry_id}</td>
+        <td><span class="badge ${a.status}">${a.status}</span></td>
+        <td>${a.created_by || "-"}</td>
+        <td>
+          <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
+          <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
+          <button class="btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+          <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
+        </td>
+      </tr>`;
+  });
 }
 
-function applyFilters(){
+/* 🔥 SEARCH LOGIC */
+document.getElementById("searchInput").addEventListener("input", function(){
+  const value = this.value.toLowerCase();
 
-const search=document.getElementById("searchInput").value.toLowerCase();
-const status=document.getElementById("statusFilter").value;
+  const filtered = allData.filter(a =>
+    a.name.toLowerCase().includes(value) ||
+    a.email.toLowerCase().includes(value) ||
+    a.reg_no.toLowerCase().includes(value) ||
+    a.entry_id.toLowerCase().includes(value)
+  );
 
-let filtered=allData.filter(a=>{
-
-const matchSearch=
-a.name.toLowerCase().includes(search)||
-a.email.toLowerCase().includes(search)||
-a.reg_no.toLowerCase().includes(search)||
-a.entry_id.toLowerCase().includes(search);
-
-const matchStatus=status==="ALL"||a.status===status;
-
-return matchSearch && matchStatus;
+  renderTable(filtered);
 });
 
-renderTable(filtered);
+/* STATUS UPDATE */
+async function updateStatus(id,status){
+  await supabaseClient.from("attendees")
+    .update({status})
+    .eq("entry_id",id);
+
+  loadData();
 }
 
-async function updateStatus(entryId,newStatus){
-await supabaseClient.from("attendees").update({status:newStatus}).eq("entry_id",entryId);
-await loadAdminData(); // reload + preserve filter
+/* DELETE */
+async function deleteUser(id){
+  if(!confirm("Delete this attendee?")) return;
+
+  await supabaseClient.from("attendees")
+    .delete()
+    .eq("entry_id",id);
+
+  loadData();
 }
 
-async function deleteAttendee(entryId){
-if(!confirm("Delete this attendee?"))return;
-await supabaseClient.from("attendees").delete().eq("entry_id",entryId);
-await loadAdminData();
-}
-
+/* VIEW QR */
 function viewQR(qrValue){
-window.open(`view-qr.html?qr=${qrValue}`,"_blank");
+  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
 }
 
 async function logout(){
-await supabaseClient.auth.signOut();
-window.location.href="login.html";
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
