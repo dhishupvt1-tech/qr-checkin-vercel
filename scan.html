@@ -54,12 +54,12 @@
       margin-bottom:30px;
     }
 
-    /* ===== SCANNER WRAPPER FIX ===== */
+    /* 🔥 PERFECT RESPONSIVE SCANNER */
 
     .scanner-wrapper{
       position:relative;
-      width:350px;
-      height:350px;
+      width:min(90vw,400px);
+      aspect-ratio:1/1;
       border-radius:16px;
       overflow:hidden;
       background:black;
@@ -67,13 +67,12 @@
       margin-bottom:30px;
     }
 
-    /* Force internal video to match wrapper exactly */
     #reader{
       width:100% !important;
       height:100% !important;
     }
 
-    #reader > div {
+    #reader > div{
       width:100% !important;
       height:100% !important;
     }
@@ -84,13 +83,12 @@
       object-fit:cover !important;
     }
 
-    /* Remove extra scan region padding */
     #reader__scan_region{
       padding:0 !important;
       margin:0 !important;
     }
 
-    /* ===== GOLD CORNER FRAME ===== */
+    /* GOLD CORNER FRAME */
 
     .scanner-overlay{
       position:absolute;
@@ -194,6 +192,7 @@ const supabaseClient=supabase.createClient(
 );
 
 let currentRecord=null;
+let scannerInstance=null;
 
 (async()=>{
 const user=await requireAuth(supabaseClient);
@@ -202,15 +201,33 @@ initScanner();
 })();
 
 function initScanner(){
-const scanner=new Html5Qrcode("reader");
-scanner.start(
-{facingMode:"environment"},
-{fps:10,qrbox:250},
-async qrText=>{
-const {data}=await supabaseClient.from("attendees").select("*").eq("qr",qrText).single();
-if(!data){showMessage("❌ QR Not Found","error");return;}
-renderRecord(data);
-});
+
+  const wrapper=document.querySelector(".scanner-wrapper");
+  const size=wrapper.offsetWidth;
+
+  scannerInstance=new Html5Qrcode("reader");
+
+  scannerInstance.start(
+    { facingMode:"environment" },
+    {
+      fps:10,
+      qrbox:{ width:size-60, height:size-60 }
+    },
+    async qrText=>{
+      const {data}=await supabaseClient
+        .from("attendees")
+        .select("*")
+        .eq("qr",qrText)
+        .single();
+
+      if(!data){
+        showMessage("❌ QR Not Found","error");
+        return;
+      }
+
+      renderRecord(data);
+    }
+  );
 }
 
 function renderRecord(data){
@@ -242,15 +259,28 @@ ${actions}
 }
 
 async function updateStatus(status){
-await supabaseClient.from("attendees").update({status}).eq("entry_id",currentRecord.entry_id);
+await supabaseClient
+.from("attendees")
+.update({status})
+.eq("entry_id",currentRecord.entry_id);
+
 currentRecord.status=status;
 renderRecord(currentRecord);
 }
 
 async function manualLookup(){
 const id=entryIdInput.value.trim().toUpperCase();
-const {data}=await supabaseClient.from("attendees").select("*").eq("entry_id",id).single();
-if(!data){showMessage("❌ Invalid Entry ID","error");return;}
+const {data}=await supabaseClient
+.from("attendees")
+.select("*")
+.eq("entry_id",id)
+.single();
+
+if(!data){
+showMessage("❌ Invalid Entry ID","error");
+return;
+}
+
 renderRecord(data);
 }
 
