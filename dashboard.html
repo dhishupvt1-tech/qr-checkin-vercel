@@ -1,92 +1,325 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TANTRA 2026 | Dashboard</title>
+  <title>TANTRA 2026 | Command Dashboard</title>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+
   <style>
-    body { background:#0B1C2D; color:white; font-family:Arial; padding:30px }
-    nav a { color:#C9A44C; margin-right:12px; text-decoration:none }
-    .cards { display:flex; gap:15px; margin-bottom:30px }
-    .card {
-      background:#11263f;
-      padding:20px;
-      border-radius:8px;
-      min-width:160px;
-      text-align:center;
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    body{
+      background:linear-gradient(135deg,#0B1C2D,#081522);
+      font-family:'Poppins',sans-serif;
+      color:white;
+      min-height:100vh;
     }
-    .num { font-size:28px; font-weight:bold }
-    canvas { max-width:420px; margin-top:20px }
+
+    .page{min-height:100vh;display:flex;flex-direction:column}
+
+    .navbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:18px 40px;
+      background:#11263F;
+    }
+
+    .navbar a{
+      color:#C9A44C;
+      text-decoration:none;
+      margin-left:20px;
+    }
+
+    .content{
+      flex:1;
+      padding:40px;
+      max-width:1500px;
+      margin:auto;
+      width:100%;
+    }
+
+    h2{
+      font-family:'Playfair Display',serif;
+      color:#C9A44C;
+      margin-bottom:20px;
+    }
+
+    .countdown{
+      font-size:18px;
+      margin-bottom:25px;
+      color:#FFC107;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:20px;
+      margin-bottom:40px;
+    }
+
+    .card{
+      padding:25px;
+      border-radius:14px;
+      background:linear-gradient(135deg,#11263F,#1a3559);
+      box-shadow:0 15px 30px rgba(0,0,0,0.5);
+      transition:0.3s;
+    }
+
+    .card:hover{transform:translateY(-6px)}
+
+    .card-title{font-size:14px;opacity:0.8}
+    .num{font-size:34px;font-weight:600;margin-top:10px}
+
+    .progress-bar{
+      height:8px;
+      background:#1e3b5f;
+      border-radius:6px;
+      overflow:hidden;
+      margin-top:12px;
+    }
+
+    .progress{
+      height:100%;
+      background:#4CAF50;
+      width:0%;
+      transition:0.8s ease;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:30px;
+      margin-bottom:40px;
+    }
+
+    canvas{
+      background:#11263F;
+      padding:20px;
+      border-radius:14px;
+    }
+
+    .ticker-container{
+      background:#11263F;
+      padding:20px;
+      border-radius:14px;
+      overflow:hidden;
+      height:200px;
+      position:relative;
+    }
+
+    .ticker{
+      position:absolute;
+      width:100%;
+      animation:scrollUp 15s linear infinite;
+    }
+
+    .ticker-item{
+      padding:8px 0;
+      border-bottom:1px solid #1e3b5f;
+      font-size:14px;
+    }
+
+    @keyframes scrollUp{
+      0%{transform:translateY(0)}
+      100%{transform:translateY(-50%)}
+    }
+
+    @media(max-width:900px){
+      .grid-2{grid-template-columns:1fr}
+    }
+
   </style>
 </head>
 
 <body>
+<div class="page">
 
-<nav>
-  <a href="register.html">Register</a>
-  <a href="scan.html">Scan</a>
-  <a href="admin.html">Admin</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="#" onclick="logout()">Logout</a>
+<nav class="navbar">
+  <div style="font-family:'Playfair Display',serif;color:#C9A44C">TANTRA 2026</div>
+  <div>
+    <a href="register.html">Register</a>
+    <a href="scan.html">Scan</a>
+    <a href="admin.html">Admin</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
 </nav>
 
-<h2>Live Dashboard – TANTRA 2026</h2>
+<div class="content">
+
+<h2>Live Event Command Center</h2>
+
+<div class="countdown" id="countdown"></div>
 
 <div class="cards">
-  <div class="card"><div>Total</div><div class="num" id="total">0</div></div>
-  <div class="card"><div>Checked In</div><div class="num" id="checked">0</div></div>
-  <div class="card"><div>Pending</div><div class="num" id="pending">0</div></div>
-  <div class="card"><div>Rejected</div><div class="num" id="rejected">0</div></div>
+  <div class="card">
+    <div class="card-title">Total Registrations</div>
+    <div class="num" id="total">0</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Checked In</div>
+    <div class="num" id="checked">0</div>
+    <div class="progress-bar"><div class="progress" id="checkProgress"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Pending</div>
+    <div class="num" id="pending">0</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Rejected</div>
+    <div class="num" id="rejected">0</div>
+  </div>
 </div>
 
-<canvas id="pieChart"></canvas>
+<div class="grid-2">
+  <canvas id="statusChart"></canvas>
+  <canvas id="hourChart"></canvas>
+</div>
+
+<div class="ticker-container">
+  <h3 style="color:#C9A44C;margin-bottom:10px;">Live Check-In Feed</h3>
+  <div class="ticker" id="ticker"></div>
+</div>
+
+</div>
+</div>
 
 <script>
-const supabaseClient = supabase.createClient(
-  "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+const supabaseClient=supabase.createClient(
+"https://qwumwbmystwwhsjpllqn.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 );
 
-/* 🔐 AUTH FIRST */
-(async () => {
-  const user = await requireAuth(supabaseClient);
-  if (!user) return;
-  loadDashboard();
+let statusChartInstance=null;
+let hourChartInstance=null;
+
+(async()=>{
+const user=await requireAuth(supabaseClient);
+if(!user)return;
+loadDashboard();
+setInterval(loadDashboard,10000);
+startCountdown();
 })();
 
-async function loadDashboard() {
-  const { data } = await supabaseClient
-    .from("attendees")
-    .select("status");
+async function loadDashboard(){
 
-  const total = data.length;
-  const checked = data.filter(d => d.status === "CHECKED_IN").length;
-  const rejected = data.filter(d => d.status === "REJECTED").length;
-  const pending = data.filter(d => d.status === "PENDING").length;
+const {data}=await supabaseClient.from("attendees").select("*");
 
-  document.getElementById("total").innerText = total;
-  document.getElementById("checked").innerText = checked;
-  document.getElementById("pending").innerText = pending;
-  document.getElementById("rejected").innerText = rejected;
+const total=data.length;
+const checked=data.filter(d=>d.status==="CHECKED_IN").length;
+const rejected=data.filter(d=>d.status==="REJECTED").length;
+const pending=data.filter(d=>d.status==="PENDING").length;
 
-  new Chart(document.getElementById("pieChart"), {
-    type: "pie",
-    data: {
-      labels: ["Checked In", "Pending", "Rejected"],
-      datasets: [{
-        data: [checked, pending, rejected],
-        backgroundColor: ["#4CAF50", "#FFC107", "#F44336"]
-      }]
-    }
-  });
+setNumber("total",total);
+setNumber("checked",checked);
+setNumber("pending",pending);
+setNumber("rejected",rejected);
+
+const percent=total?((checked/total)*100).toFixed(1):0;
+document.getElementById("checkProgress").style.width=percent+"%";
+
+renderStatusChart(checked,pending,rejected);
+renderHourChart(data);
+renderTicker(data);
 }
 
-async function logout() {
-  await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
+function setNumber(id,val){
+document.getElementById(id).innerText=val;
+}
+
+function renderStatusChart(checked,pending,rejected){
+
+if(statusChartInstance)statusChartInstance.destroy();
+
+statusChartInstance=new Chart(document.getElementById("statusChart"),{
+type:"doughnut",
+data:{
+labels:["Checked","Pending","Rejected"],
+datasets:[{
+data:[checked,pending,rejected],
+backgroundColor:["#4CAF50","#FFC107","#F44336"]
+}]
+},
+options:{plugins:{legend:{labels:{color:"white"}}}}
+});
+}
+
+function renderHourChart(data){
+
+let hours={};
+
+data.forEach(d=>{
+if(!d.created_at)return;
+const hour=new Date(d.created_at).getHours();
+hours[hour]=(hours[hour]||0)+1;
+});
+
+const labels=Object.keys(hours);
+const values=Object.values(hours);
+
+if(hourChartInstance)hourChartInstance.destroy();
+
+hourChartInstance=new Chart(document.getElementById("hourChart"),{
+type:"bar",
+data:{
+labels:labels,
+datasets:[{
+label:"Registrations per Hour",
+data:values,
+backgroundColor:"#C9A44C"
+}]
+},
+options:{plugins:{legend:{labels:{color:"white"}}},
+scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}}
+});
+}
+
+function renderTicker(data){
+
+let checkIns=data
+.filter(d=>d.status==="CHECKED_IN")
+.slice(-10)
+.reverse();
+
+let html="";
+
+checkIns.forEach(d=>{
+html+=`<div class="ticker-item">✅ ${d.name} (${d.reg_no})</div>`;
+});
+
+document.getElementById("ticker").innerHTML=html+html; 
+}
+
+function startCountdown(){
+
+const eventDate=new Date("March 27, 2026 08:00:00").getTime();
+
+setInterval(()=>{
+const now=new Date().getTime();
+const distance=eventDate-now;
+
+if(distance<0){
+document.getElementById("countdown").innerText="Event is Live 🎉";
+return;
+}
+
+const days=Math.floor(distance/(1000*60*60*24));
+const hours=Math.floor((distance%(1000*60*60*24))/(1000*60*60));
+const minutes=Math.floor((distance%(1000*60*60))/(1000*60));
+
+document.getElementById("countdown").innerText=
+`Event Countdown: ${days}d ${hours}h ${minutes}m`;
+},1000);
+}
+
+async function logout(){
+await supabaseClient.auth.signOut();
+window.location.href="login.html";
 }
 </script>
 
