@@ -9,20 +9,66 @@
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:linear-gradient(135deg,#0B1C2D,#081522);color:white;font-family:'Segoe UI',sans-serif;min-height:100vh}
+    body{
+      background:linear-gradient(135deg,#0B1C2D,#081522);
+      color:white;
+      font-family:'Segoe UI',sans-serif;
+      min-height:100vh
+    }
     .page{min-height:100vh;display:flex;flex-direction:column}
-    .navbar{display:flex;justify-content:space-between;align-items:center;padding:18px 40px;background:#11263F;box-shadow:0 4px 15px rgba(0,0,0,0.4)}
-    .navbar a{color:#C9A44C;text-decoration:none;margin-left:20px;font-weight:500}
+    .navbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:18px 40px;
+      background:#11263F;
+      box-shadow:0 4px 15px rgba(0,0,0,0.4)
+    }
+    .navbar a{
+      color:#C9A44C;
+      text-decoration:none;
+      margin-left:20px;
+      font-weight:500
+    }
     .navbar a:hover{color:#E6C36A}
-    .content{flex:1;width:100%;max-width:1100px;margin:40px auto;padding:20px}
+    .content{
+      flex:1;
+      width:100%;
+      max-width:1100px;
+      margin:40px auto;
+      padding:20px
+    }
     h2{color:#C9A44C;margin-bottom:25px}
-    .card{background:#11263F;padding:30px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.4);max-width:500px}
-    input{padding:12px;width:100%;margin-bottom:15px;border-radius:6px;border:none}
-    button{padding:12px;background:#C9A44C;border:none;border-radius:6px;font-weight:bold;cursor:pointer;width:100%}
+    .card{
+      background:#11263F;
+      padding:30px;
+      border-radius:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.4);
+      max-width:500px
+    }
+    input{
+      padding:12px;
+      width:100%;
+      margin-bottom:15px;
+      border-radius:6px;
+      border:none
+    }
+    button{
+      padding:12px;
+      background:#C9A44C;
+      border:none;
+      border-radius:6px;
+      font-weight:bold;
+      cursor:pointer;
+      width:100%
+    }
     button:hover{background:#E6C36A}
-    #msg{margin-top:15px}
+    #msg{margin-top:15px;font-weight:500}
     #qrcode{margin-top:20px}
-    @media(max-width:768px){.navbar{flex-direction:column;align-items:flex-start}.content{margin:20px}}
+    @media(max-width:768px){
+      .navbar{flex-direction:column;align-items:flex-start}
+      .content{margin:20px}
+    }
   </style>
 </head>
 
@@ -56,45 +102,97 @@
 
 <script>
 const supabaseClient = supabase.createClient(
-"https://qwumwbmystwwhsjpllqn.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  "https://qwumwbmystwwhsjpllqn.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let currentUser=null;
-(async()=>{currentUser=await requireAuth(supabaseClient);if(!currentUser)return})();
+let currentUser = null;
 
-async function register(){
-const name=nameInput.value.trim();
-const email=emailInput.value.trim();
-const regNo=regNoInput.value.trim();
-const msg=document.getElementById("msg");
+(async () => {
+  currentUser = await requireAuth(supabaseClient);
+  if (!currentUser) return;
+})();
 
-if(!name||!email||!regNo){msg.innerText="⚠️ All fields required";msg.style.color="#ff8080";return}
+async function register() {
 
-const qrValue=crypto.randomUUID();
-const entryId="T26-"+Math.random().toString(36).substring(2,8).toUpperCase();
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const regNo = regNoInput.value.trim().toUpperCase();
+  const msg = document.getElementById("msg");
 
-const {error}=await supabaseClient.from("attendees").insert({
-name,email,reg_no:regNo,qr:qrValue,entry_id:entryId,status:"PENDING",created_by:currentUser.email
-});
+  if (!name || !email || !regNo) {
+    msg.innerText = "⚠️ All fields required";
+    msg.style.color = "#ff8080";
+    return;
+  }
 
-if(error){msg.innerText=error.message;msg.style.color="#ff8080";return}
+  /* 🔒 FRONTEND DUPLICATE CHECK */
+  const { data: existing } = await supabaseClient
+    .from("attendees")
+    .select("reg_no")
+    .eq("reg_no", regNo)
+    .single();
 
-qrcode.innerHTML="";
-new QRCode(qrcode,{text:qrValue,width:200,height:200});
+  if (existing) {
+    msg.innerText = "❌ Register No already registered";
+    msg.style.color = "#ff8080";
+    return;
+  }
 
-try{
-const res=await fetch("/api/sendEmail",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,reg_no:regNo,qr_text:qrValue,entry_id:entryId})});
-if(!res.ok)throw new Error();
-msg.innerText=`✅ Registered\n📧 Mail sent\n🆔 ${entryId}`;
-msg.style.color="#9cff9c";
-}catch{
-msg.innerText=`⚠️ Registered but mail failed\n🆔 ${entryId}`;
-msg.style.color="#ff8080";
+  const qrValue = crypto.randomUUID();
+  const entryId = "T26-" + Math.random().toString(36).substring(2,8).toUpperCase();
+
+  const { error } = await supabaseClient.from("attendees").insert({
+    name,
+    email,
+    reg_no: regNo,
+    qr: qrValue,
+    entry_id: entryId,
+    status: "PENDING",
+    created_by: currentUser.email
+  });
+
+  if (error) {
+    if (error.message.includes("duplicate")) {
+      msg.innerText = "❌ Register No already registered";
+    } else {
+      msg.innerText = error.message;
+    }
+    msg.style.color = "#ff8080";
+    return;
+  }
+
+  qrcode.innerHTML = "";
+  new QRCode(qrcode, { text: qrValue, width:200, height:200 });
+
+  try {
+    const res = await fetch("/api/sendEmail", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        name,
+        email,
+        reg_no: regNo,
+        qr_text: qrValue,
+        entry_id: entryId
+      })
+    });
+
+    if (!res.ok) throw new Error();
+
+    msg.innerText = `✅ Registered\n📧 Mail sent\n🆔 ${entryId}`;
+    msg.style.color = "#9cff9c";
+
+  } catch {
+    msg.innerText = `⚠️ Registered but mail failed\n🆔 ${entryId}`;
+    msg.style.color = "#ff8080";
+  }
 }
-}
 
-async function logout(){await supabaseClient.auth.signOut();window.location.href="login.html"}
+async function logout() {
+  await supabaseClient.auth.signOut();
+  window.location.href = "login.html";
+}
 </script>
 
 </body>
