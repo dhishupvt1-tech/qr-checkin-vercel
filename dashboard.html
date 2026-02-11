@@ -178,12 +178,11 @@
 
 <div class="grid-2">
   <canvas id="statusChart"></canvas>
-  <canvas id="hourChart"></canvas>
-</div>
 
-<div class="ticker-container">
-  <h3 style="color:#C9A44C;margin-bottom:10px;">Live Check-In Feed</h3>
-  <div class="ticker" id="ticker"></div>
+  <div class="ticker-container">
+    <h3 style="color:#C9A44C;margin-bottom:10px;">Live Check-In Feed</h3>
+    <div class="ticker" id="ticker"></div>
+  </div>
 </div>
 
 </div>
@@ -196,7 +195,6 @@ const supabaseClient=supabase.createClient(
 );
 
 let statusChartInstance=null;
-let hourChartInstance=null;
 
 (async()=>{
 const user=await requireAuth(supabaseClient);
@@ -215,21 +213,16 @@ const checked=data.filter(d=>d.status==="CHECKED_IN").length;
 const rejected=data.filter(d=>d.status==="REJECTED").length;
 const pending=data.filter(d=>d.status==="PENDING").length;
 
-setNumber("total",total);
-setNumber("checked",checked);
-setNumber("pending",pending);
-setNumber("rejected",rejected);
+document.getElementById("total").innerText=total;
+document.getElementById("checked").innerText=checked;
+document.getElementById("pending").innerText=pending;
+document.getElementById("rejected").innerText=rejected;
 
 const percent=total?((checked/total)*100).toFixed(1):0;
 document.getElementById("checkProgress").style.width=percent+"%";
 
 renderStatusChart(checked,pending,rejected);
-renderHourChart(data);
 renderTicker(data);
-}
-
-function setNumber(id,val){
-document.getElementById(id).innerText=val;
 }
 
 function renderStatusChart(checked,pending,rejected){
@@ -249,36 +242,6 @@ options:{plugins:{legend:{labels:{color:"white"}}}}
 });
 }
 
-function renderHourChart(data){
-
-let hours={};
-
-data.forEach(d=>{
-if(!d.created_at)return;
-const hour=new Date(d.created_at).getHours();
-hours[hour]=(hours[hour]||0)+1;
-});
-
-const labels=Object.keys(hours);
-const values=Object.values(hours);
-
-if(hourChartInstance)hourChartInstance.destroy();
-
-hourChartInstance=new Chart(document.getElementById("hourChart"),{
-type:"bar",
-data:{
-labels:labels,
-datasets:[{
-label:"Registrations per Hour",
-data:values,
-backgroundColor:"#C9A44C"
-}]
-},
-options:{plugins:{legend:{labels:{color:"white"}}},
-scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}}
-});
-}
-
 function renderTicker(data){
 
 let checkIns=data
@@ -292,7 +255,7 @@ checkIns.forEach(d=>{
 html+=`<div class="ticker-item">✅ ${d.name} (${d.reg_no})</div>`;
 });
 
-document.getElementById("ticker").innerHTML=html+html; 
+document.getElementById("ticker").innerHTML=html+html;
 }
 
 function startCountdown(){
