@@ -6,6 +6,8 @@
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
 
@@ -14,7 +16,92 @@
       font-family:Arial;
       color:white;
       min-height:100vh;
+      overflow:hidden;
     }
+
+    /* ================= PIN LOCK ================= */
+    .lock-overlay{
+      position:fixed;
+      inset:0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:linear-gradient(135deg,#0B1C2D,#081522);
+      z-index:9999;
+    }
+
+    .lock-card{
+      width:360px;
+      padding:40px;
+      background:rgba(255,255,255,0.06);
+      backdrop-filter:blur(20px);
+      border-radius:16px;
+      text-align:center;
+      box-shadow:0 20px 40px rgba(0,0,0,0.5);
+      animation:fadeIn 0.6s ease;
+    }
+
+    .lock-card h2{
+      color:#C9A44C;
+      margin-bottom:20px;
+    }
+
+    .dots{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-bottom:25px;
+    }
+
+    .dot{
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      border:2px solid #C9A44C;
+    }
+
+    .dot.filled{
+      background:#C9A44C;
+    }
+
+    .keypad{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .key{
+      padding:18px;
+      font-size:18px;
+      border-radius:10px;
+      background:#11263F;
+      cursor:pointer;
+      transition:0.2s;
+    }
+
+    .key:hover{
+      background:#C9A44C;
+      color:black;
+    }
+
+    .shake{
+      animation:shake 0.4s;
+    }
+
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-8px)}
+      75%{transform:translateX(8px)}
+    }
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(15px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    .hidden{display:none}
+
+    /* ================= NORMAL ADMIN ================= */
 
     .navbar{
       display:flex;
@@ -86,32 +173,23 @@
     .CHECKED_IN{background:#4CAF50}
     .REJECTED{background:#F44336}
 
-    /* 🔥 FIXED ACTION BUTTONS */
     .actions{
       display:flex;
       justify-content:center;
       align-items:center;
       gap:4px;
-      flex-wrap:nowrap;
     }
 
-    button{
+    button.action{
       width:28px;
       height:28px;
       border:none;
-      cursor:pointer;
       border-radius:6px;
+      cursor:pointer;
       font-size:14px;
-      font-weight:bold;
       display:flex;
       align-items:center;
       justify-content:center;
-      transition:0.2s;
-    }
-
-    button:hover{
-      transform:scale(1.1);
-      opacity:0.9;
     }
 
     .btn-check{background:#4CAF50;color:white}
@@ -123,6 +201,17 @@
 </head>
 
 <body>
+
+<!-- PIN LOCK -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card" id="lockCard">
+    <h2>Admin Secure Access</h2>
+    <div class="dots" id="dots"></div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+</div>
+
+<div id="mainAdmin" class="hidden">
 
 <nav class="navbar">
   <div>TANTRA 2026</div>
@@ -141,7 +230,6 @@
 
 <div class="top-controls">
   <input id="searchInput" placeholder="Search name / email / reg no / entry id">
-  
   <select id="sortSelect">
     <option value="newest">Newest First</option>
     <option value="oldest">Oldest First</option>
@@ -151,132 +239,174 @@
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Reg No</th>
-      <th>Entry ID</th>
-      <th>Status</th>
-      <th>Created By</th>
-      <th>Created At</th>
-      <th style="width:150px;">Actions</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Reg No</th>
+<th>Entry ID</th>
+<th>Status</th>
+<th>Created By</th>
+<th>Created At</th>
+<th style="width:150px;">Actions</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
 </table>
 
 </div>
+</div>
 
 <script>
+/* ================= PIN LOGIC ================= */
+const ACCESS_CODE="528494";
+let enteredPin="";
+
+const dotsContainer=document.getElementById("dots");
+const keypad=document.getElementById("keypad");
+
+for(let i=0;i<6;i++){
+  const dot=document.createElement("div");
+  dot.classList.add("dot");
+  dotsContainer.appendChild(dot);
+}
+
+for(let i=1;i<=9;i++){
+  createKey(i);
+}
+createKey("0");
+createKey("←");
+
+function createKey(value){
+  const key=document.createElement("div");
+  key.classList.add("key");
+  key.innerText=value;
+  key.onclick=()=>handleKey(value);
+  keypad.appendChild(key);
+}
+
+function handleKey(value){
+  if(value==="←"){
+    enteredPin=enteredPin.slice(0,-1);
+  }else{
+    if(enteredPin.length<6){
+      enteredPin+=value;
+    }
+  }
+
+  updateDots();
+
+  if(enteredPin.length===6){
+    if(enteredPin===ACCESS_CODE){
+      unlockAdmin();
+    }else{
+      shake();
+      enteredPin="";
+      updateDots();
+    }
+  }
+}
+
+function updateDots(){
+  const dots=document.querySelectorAll(".dot");
+  dots.forEach((dot,i)=>{
+    dot.classList.toggle("filled",i<enteredPin.length);
+  });
+}
+
+function shake(){
+  const card=document.getElementById("lockCard");
+  card.classList.add("shake");
+  setTimeout(()=>card.classList.remove("shake"),400);
+}
+
+function unlockAdmin(){
+  document.getElementById("lockOverlay").style.display="none";
+  document.getElementById("mainAdmin").classList.remove("hidden");
+  document.body.style.overflow="auto";
+}
+
+/* ================= SUPABASE ================= */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let allData = [];
+let allData=[];
 
-(async () => {
-  const user = await requireAuth(supabaseClient);
-  if (!user) return;
+(async()=>{
+  const user=await requireAuth(supabaseClient);
+  if(!user)return;
   loadData();
 })();
 
-async function loadData() {
-  const { data } = await supabaseClient
-    .from("attendees")
-    .select("*");
-
-  allData = data || [];
+async function loadData(){
+  const {data}=await supabaseClient.from("attendees").select("*");
+  allData=data||[];
   applyFilters();
 }
 
-function applyFilters() {
+function applyFilters(){
+  const searchValue=document.getElementById("searchInput").value.toLowerCase();
+  const sortValue=document.getElementById("sortSelect").value;
 
-  const searchValue = document.getElementById("searchInput").value.toLowerCase();
-  const sortValue = document.getElementById("sortSelect").value;
-
-  let filtered = allData.filter(a =>
-    (a.name || "").toLowerCase().includes(searchValue) ||
-    (a.email || "").toLowerCase().includes(searchValue) ||
-    (a.reg_no || "").toLowerCase().includes(searchValue) ||
-    (a.entry_id || "").toLowerCase().includes(searchValue)
+  let filtered=allData.filter(a=>
+    (a.name||"").toLowerCase().includes(searchValue)||
+    (a.email||"").toLowerCase().includes(searchValue)||
+    (a.reg_no||"").toLowerCase().includes(searchValue)||
+    (a.entry_id||"").toLowerCase().includes(searchValue)
   );
 
-  if(sortValue === "newest"){
-    filtered.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
-  }
-
-  if(sortValue === "oldest"){
-    filtered.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
-  }
-
-  if(sortValue === "name"){
-    filtered.sort((a,b)=> (a.name||"").localeCompare(b.name||""));
-  }
-
-  if(sortValue === "status"){
-    filtered.sort((a,b)=> (a.status||"").localeCompare(b.status||""));
-  }
+  if(sortValue==="newest") filtered.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(sortValue==="oldest") filtered.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  if(sortValue==="name") filtered.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  if(sortValue==="status") filtered.sort((a,b)=>(a.status||"").localeCompare(b.status||""));
 
   renderTable(filtered);
 }
 
-function renderTable(data) {
+function renderTable(data){
+  const tbody=document.getElementById("tbody");
+  tbody.innerHTML="";
 
-  const tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
-
-  data.forEach(a => {
-
-    const formattedDate = a.created_at
-      ? new Date(a.created_at).toLocaleString("en-IN", {
-          day:"2-digit",
-          month:"short",
-          year:"numeric",
-          hour:"2-digit",
-          minute:"2-digit",
-          hour12:true
-        })
+  data.forEach(a=>{
+    const formattedDate=a.created_at
+      ? new Date(a.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})
       : "-";
 
-    tbody.innerHTML += `
+    tbody.innerHTML+=`
       <tr>
-        <td>${a.name || "-"}</td>
-        <td>${a.email || "-"}</td>
-        <td>${a.reg_no || "-"}</td>
-        <td>${a.entry_id || "-"}</td>
+        <td>${a.name||"-"}</td>
+        <td>${a.email||"-"}</td>
+        <td>${a.reg_no||"-"}</td>
+        <td>${a.entry_id||"-"}</td>
         <td><span class="badge ${a.status}">${a.status}</span></td>
-        <td>${a.created_by || "-"}</td>
+        <td>${a.created_by||"-"}</td>
         <td>${formattedDate}</td>
         <td>
           <div class="actions">
-            <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')" title="Check In">✔</button>
-            <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')" title="Reject">✖</button>
-            <button class="btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')" title="Pending">⏳</button>
-            <button class="btn-delete" onclick="deleteUser('${a.entry_id}')" title="Delete">🗑</button>
-            <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')" title="View QR">🔳</button>
+            <button class="action btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
+            <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
+            <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
+            <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
           </div>
         </td>
       </tr>`;
   });
 }
 
-document.getElementById("searchInput").addEventListener("input", applyFilters);
-document.getElementById("sortSelect").addEventListener("change", applyFilters);
+document.getElementById("searchInput").addEventListener("input",applyFilters);
+document.getElementById("sortSelect").addEventListener("change",applyFilters);
 
 async function updateStatus(id,status){
-  await supabaseClient.from("attendees")
-    .update({status})
-    .eq("entry_id",id);
+  await supabaseClient.from("attendees").update({status}).eq("entry_id",id);
   loadData();
 }
 
 async function deleteUser(id){
-  if(!confirm("Delete this attendee?")) return;
-  await supabaseClient.from("attendees")
-    .delete()
-    .eq("entry_id",id);
+  if(!confirm("Delete this attendee?"))return;
+  await supabaseClient.from("attendees").delete().eq("entry_id",id);
   loadData();
 }
 
