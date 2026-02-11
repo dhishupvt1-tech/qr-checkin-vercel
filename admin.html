@@ -65,6 +65,7 @@
       border:1px solid #1e3b5f;
       text-align:center;
       font-size:13px;
+      white-space:nowrap;
     }
 
     th{
@@ -97,13 +98,15 @@
       border-radius:4px;
       font-size:12px;
       font-weight:bold;
-      min-width:35px;
+      min-width:40px;
     }
 
     .btn-check{background:#4CAF50;color:white}
     .btn-reject{background:#F44336;color:white}
+    .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
+
   </style>
 </head>
 
@@ -144,8 +147,8 @@
       <th>Entry ID</th>
       <th>Status</th>
       <th>Created By</th>
-      <th>Created At (IST)</th>
-      <th style="width:220px;">Actions</th>
+      <th>Created At</th>
+      <th style="width:260px;">Actions</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -215,15 +218,7 @@ function renderTable(data) {
   data.forEach(a => {
 
     const formattedDate = a.created_at
-      ? new Date(a.created_at).toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true
-        }).replace(",", " •")
+      ? new Date(a.created_at).toLocaleString()
       : "-";
 
     tbody.innerHTML += `
@@ -239,6 +234,7 @@ function renderTable(data) {
           <div class="actions">
             <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
             <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
+            <button class="btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
             <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
           </div>
@@ -247,10 +243,7 @@ function renderTable(data) {
   });
 }
 
-/* SEARCH */
 document.getElementById("searchInput").addEventListener("input", applyFilters);
-
-/* SORT */
 document.getElementById("sortSelect").addEventListener("change", applyFilters);
 
 async function updateStatus(id,status){
