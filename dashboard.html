@@ -67,10 +67,7 @@
       border-radius:14px;
       background:linear-gradient(135deg,#11263F,#1a3559);
       box-shadow:0 15px 30px rgba(0,0,0,0.5);
-      transition:0.3s;
     }
-
-    .card:hover{transform:translateY(-6px)}
 
     .card-title{font-size:14px;opacity:0.8}
     .num{font-size:34px;font-weight:600;margin-top:10px}
@@ -90,6 +87,7 @@
       transition:0.8s ease;
     }
 
+    /* 🔥 RESPONSIVE GRID FIX */
     .grid-2{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -97,10 +95,19 @@
       margin-bottom:40px;
     }
 
+    /* Stack on tablet + mobile */
+    @media(max-width:1024px){
+      .grid-2{
+        grid-template-columns:1fr;
+      }
+    }
+
     canvas{
       background:#11263F;
       padding:20px;
       border-radius:14px;
+      width:100% !important;
+      height:auto !important;
     }
 
     .ticker-container{
@@ -108,7 +115,7 @@
       padding:20px;
       border-radius:14px;
       overflow:hidden;
-      height:200px;
+      height:220px;
       position:relative;
     }
 
@@ -127,10 +134,6 @@
     @keyframes scrollUp{
       0%{transform:translateY(0)}
       100%{transform:translateY(-50%)}
-    }
-
-    @media(max-width:900px){
-      .grid-2{grid-template-columns:1fr}
     }
 
   </style>
@@ -177,12 +180,14 @@
 </div>
 
 <div class="grid-2">
+
   <canvas id="statusChart"></canvas>
 
   <div class="ticker-container">
     <h3 style="color:#C9A44C;margin-bottom:10px;">Live Check-In Feed</h3>
     <div class="ticker" id="ticker"></div>
   </div>
+
 </div>
 
 </div>
