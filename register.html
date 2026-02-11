@@ -10,6 +10,8 @@
   <script src="authGuard.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
 
@@ -18,8 +20,96 @@
       font-family:'Poppins',sans-serif;
       color:white;
       min-height:100vh;
+      overflow:hidden;
     }
 
+    /* ===== UNLOCK OVERLAY ===== */
+    .unlock-overlay{
+      position:fixed;
+      inset:0;
+      background:linear-gradient(135deg,#0B1C2D,#081522);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      animation:fadeIn 0.6s ease;
+    }
+
+    .unlock-card{
+      background:rgba(255,255,255,0.06);
+      backdrop-filter:blur(20px);
+      padding:50px 40px;
+      border-radius:16px;
+      text-align:center;
+      box-shadow:0 20px 40px rgba(0,0,0,0.5);
+      width:380px;
+      position:relative;
+    }
+
+    .unlock-card::before{
+      content:"";
+      position:absolute;
+      width:200px;
+      height:200px;
+      background:#C9A44C;
+      filter:blur(120px);
+      opacity:0.2;
+      top:-60px;
+      right:-60px;
+    }
+
+    .unlock-card h2{
+      font-family:'Playfair Display',serif;
+      color:#C9A44C;
+      margin-bottom:25px;
+      font-size:26px;
+    }
+
+    .unlock-input{
+      width:100%;
+      padding:15px;
+      font-size:20px;
+      letter-spacing:8px;
+      text-align:center;
+      border:none;
+      border-radius:10px;
+      margin-bottom:20px;
+      outline:none;
+      background:#1e3b5f;
+      color:white;
+    }
+
+    .unlock-btn{
+      width:100%;
+      padding:14px;
+      background:#C9A44C;
+      border:none;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+      transition:0.3s;
+    }
+
+    .unlock-btn:hover{
+      background:#E6C36A;
+      transform:translateY(-2px);
+    }
+
+    .shake{
+      animation:shake 0.4s;
+    }
+
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-8px)}
+      75%{transform:translateX(8px)}
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    /* ===== NORMAL PAGE ===== */
     .page{
       min-height:100vh;
       display:flex;
@@ -43,9 +133,7 @@
       transition:0.3s ease;
     }
 
-    .navbar a:hover{
-      color:#E6C36A;
-    }
+    .navbar a:hover{color:#E6C36A}
 
     .content{
       flex:1;
@@ -65,7 +153,7 @@
       animation:fadeIn 0.6s ease;
     }
 
-    h2{
+    h2.main-title{
       font-family:'Playfair Display',serif;
       font-size:28px;
       color:#C9A44C;
@@ -87,7 +175,7 @@
       box-shadow:0 0 0 2px #C9A44C;
     }
 
-    button{
+    button.main-btn{
       width:100%;
       padding:14px;
       background:#C9A44C;
@@ -96,71 +184,38 @@
       font-weight:600;
       cursor:pointer;
       transition:0.3s ease;
-      position:relative;
     }
 
-    button:hover{
+    button.main-btn:hover{
       background:#E6C36A;
       transform:translateY(-2px);
     }
 
-    button:disabled{
-      background:#999;
-      cursor:not-allowed;
-    }
+    #msg{margin-top:15px;min-height:20px}
+    .success{color:#9cff9c}
+    .error{color:#ff8080}
 
-    .loader{
-      width:18px;
-      height:18px;
-      border:3px solid rgba(255,255,255,0.3);
-      border-top:3px solid white;
-      border-radius:50%;
-      animation:spin 0.8s linear infinite;
-      display:inline-block;
-      margin-left:8px;
-    }
-
-    #msg{
-      margin-top:15px;
-      font-weight:500;
-      min-height:20px;
-      transition:0.3s ease;
-    }
-
-    .success{
-      color:#9cff9c;
-      animation:fadeIn 0.5s ease;
-    }
-
-    .error{
-      color:#ff8080;
-      animation:fadeIn 0.5s ease;
-    }
-
-    #qrcode{
-      margin-top:20px;
-      text-align:center;
-    }
-
-    @keyframes spin{
-      from{transform:rotate(0deg)}
-      to{transform:rotate(360deg)}
-    }
+    #qrcode{text-align:center;margin-top:20px}
 
     @keyframes fadeIn{
       from{opacity:0;transform:translateY(10px)}
       to{opacity:1;transform:translateY(0)}
     }
-
-    @media(max-width:768px){
-      .navbar{flex-direction:column;align-items:flex-start}
-      .content{padding:20px}
-    }
   </style>
 </head>
 
 <body>
-<div class="page">
+
+<!-- 🔐 Unlock Overlay -->
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-card" id="unlockCard">
+    <h2>Secure Access</h2>
+    <input type="password" id="accessInput" class="unlock-input" placeholder="ENTER CODE" maxlength="4">
+    <button class="unlock-btn" onclick="checkAccess()">Unlock</button>
+  </div>
+</div>
+
+<div class="page hidden" id="mainPage">
 
 <nav class="navbar">
   <div><strong style="font-family:'Playfair Display',serif;color:#C9A44C">TANTRA 2026</strong></div>
@@ -175,13 +230,13 @@
 
 <div class="content">
   <div class="card">
-    <h2>Register Entry</h2>
+    <h2 class="main-title">Register Entry</h2>
 
     <input id="nameInput" placeholder="Full Name">
     <input id="emailInput" placeholder="Email Address">
     <input id="regNoInput" placeholder="Register Number">
 
-    <button id="registerBtn" onclick="register()">Register</button>
+    <button class="main-btn" onclick="register()">Register</button>
 
     <p id="msg"></p>
     <div id="qrcode"></div>
@@ -191,22 +246,37 @@
 </div>
 
 <script>
+/* 🔐 ACCESS CONTROL */
+const ACCESS_CODE="5284";
+
+function checkAccess(){
+  const input=document.getElementById("accessInput").value;
+  const card=document.getElementById("unlockCard");
+
+  if(input===ACCESS_CODE){
+    document.getElementById("unlockOverlay").style.display="none";
+    document.getElementById("mainPage").classList.remove("hidden");
+    document.body.style.overflow="auto";
+  }else{
+    card.classList.add("shake");
+    setTimeout(()=>card.classList.remove("shake"),400);
+  }
+}
+
+/* ===== SUPABASE LOGIC ===== */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+  "YOUR_ANON_KEY"
 );
 
 let currentUser=null;
 (async()=>{currentUser=await requireAuth(supabaseClient);if(!currentUser)return})();
 
 async function register(){
-
-const btn=document.getElementById("registerBtn");
-const msg=document.getElementById("msg");
-
 const name=nameInput.value.trim();
 const email=emailInput.value.trim();
 const regNo=regNoInput.value.trim().toUpperCase();
+const msg=document.getElementById("msg");
 
 if(!name||!email||!regNo){
 msg.innerText="⚠️ All fields required";
@@ -214,62 +284,18 @@ msg.className="error";
 return;
 }
 
-/* Loader Start */
-btn.disabled=true;
-btn.innerHTML='Registering <span class="loader"></span>';
-msg.innerText="";
-msg.className="";
-
-const {data:existing}=await supabaseClient
-.from("attendees")
-.select("reg_no")
-.eq("reg_no",regNo)
-.single();
-
-if(existing){
-btn.disabled=false;
-btn.innerHTML="Register";
-msg.innerText="❌ Register No already registered";
-msg.className="error";
-return;
-}
-
 const qrValue=crypto.randomUUID();
 const entryId="T26-"+Math.random().toString(36).substring(2,8).toUpperCase();
 
-const {error}=await supabaseClient.from("attendees").insert({
+await supabaseClient.from("attendees").insert({
 name,email,reg_no:regNo,qr:qrValue,entry_id:entryId,status:"PENDING",created_by:currentUser.email
 });
-
-if(error){
-btn.disabled=false;
-btn.innerHTML="Register";
-msg.innerText="❌ Registration failed";
-msg.className="error";
-return;
-}
 
 qrcode.innerHTML="";
 new QRCode(qrcode,{text:qrValue,width:200,height:200});
 
-try{
-const res=await fetch("/api/sendEmail",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,email,reg_no:regNo,qr_text:qrValue,entry_id:entryId})
-});
-if(!res.ok)throw new Error();
-
-msg.innerText=`✅ Registered Successfully\n🆔 ${entryId}`;
+msg.innerText=`✅ Registered\n🆔 ${entryId}`;
 msg.className="success";
-
-}catch{
-msg.innerText=`⚠️ Registered but mail failed\n🆔 ${entryId}`;
-msg.className="error";
-}
-
-btn.disabled=false;
-btn.innerHTML="Register";
 }
 
 async function logout(){
