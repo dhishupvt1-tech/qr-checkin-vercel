@@ -31,7 +31,7 @@
 
     .container{
       padding:40px;
-      max-width:1500px;
+      max-width:1600px;
       margin:auto;
     }
 
@@ -58,7 +58,6 @@
     table{
       width:100%;
       border-collapse:collapse;
-      table-layout:fixed;
     }
 
     th,td{
@@ -66,9 +65,6 @@
       border:1px solid #1e3b5f;
       text-align:center;
       font-size:13px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
     }
 
     th{
@@ -87,21 +83,27 @@
     .CHECKED_IN{background:#4CAF50}
     .REJECTED{background:#F44336}
 
+    .actions{
+      display:flex;
+      justify-content:center;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+
     button{
-      padding:5px 8px;
-      margin:2px;
+      padding:6px 8px;
       border:none;
       cursor:pointer;
       border-radius:4px;
-      font-size:11px;
+      font-size:12px;
       font-weight:bold;
+      min-width:35px;
     }
 
     .btn-check{background:#4CAF50;color:white}
     .btn-reject{background:#F44336;color:white}
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
-
   </style>
 </head>
 
@@ -142,8 +144,8 @@
       <th>Entry ID</th>
       <th>Status</th>
       <th>Created By</th>
-      <th style="width:200px;">Created At (IST)</th>
-      <th>Actions</th>
+      <th>Created At (IST)</th>
+      <th style="width:220px;">Actions</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -170,21 +172,20 @@ async function loadData() {
     .from("attendees")
     .select("*");
 
-  allData = data;
+  allData = data || [];
   applyFilters();
 }
 
-/* SEARCH + SORT */
 function applyFilters() {
 
   const searchValue = document.getElementById("searchInput").value.toLowerCase();
   const sortValue = document.getElementById("sortSelect").value;
 
   let filtered = allData.filter(a =>
-    a.name.toLowerCase().includes(searchValue) ||
-    a.email.toLowerCase().includes(searchValue) ||
-    a.reg_no.toLowerCase().includes(searchValue) ||
-    a.entry_id.toLowerCase().includes(searchValue)
+    (a.name || "").toLowerCase().includes(searchValue) ||
+    (a.email || "").toLowerCase().includes(searchValue) ||
+    (a.reg_no || "").toLowerCase().includes(searchValue) ||
+    (a.entry_id || "").toLowerCase().includes(searchValue)
   );
 
   if(sortValue === "newest"){
@@ -196,11 +197,11 @@ function applyFilters() {
   }
 
   if(sortValue === "name"){
-    filtered.sort((a,b)=> a.name.localeCompare(b.name));
+    filtered.sort((a,b)=> (a.name||"").localeCompare(b.name||""));
   }
 
   if(sortValue === "status"){
-    filtered.sort((a,b)=> a.status.localeCompare(b.status));
+    filtered.sort((a,b)=> (a.status||"").localeCompare(b.status||""));
   }
 
   renderTable(filtered);
@@ -227,50 +228,46 @@ function renderTable(data) {
 
     tbody.innerHTML += `
       <tr>
-        <td>${a.name}</td>
-        <td>${a.email}</td>
-        <td>${a.reg_no}</td>
-        <td>${a.entry_id}</td>
+        <td>${a.name || "-"}</td>
+        <td>${a.email || "-"}</td>
+        <td>${a.reg_no || "-"}</td>
+        <td>${a.entry_id || "-"}</td>
         <td><span class="badge ${a.status}">${a.status}</span></td>
         <td>${a.created_by || "-"}</td>
         <td>${formattedDate}</td>
         <td>
-          <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
-          <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
-          <button class="btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-          <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
+          <div class="actions">
+            <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
+            <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
+            <button class="btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+            <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
+          </div>
         </td>
       </tr>`;
   });
 }
 
-/* LIVE SEARCH */
+/* SEARCH */
 document.getElementById("searchInput").addEventListener("input", applyFilters);
 
 /* SORT */
 document.getElementById("sortSelect").addEventListener("change", applyFilters);
 
-/* STATUS UPDATE */
 async function updateStatus(id,status){
   await supabaseClient.from("attendees")
     .update({status})
     .eq("entry_id",id);
-
   loadData();
 }
 
-/* DELETE */
 async function deleteUser(id){
   if(!confirm("Delete this attendee?")) return;
-
   await supabaseClient.from("attendees")
     .delete()
     .eq("entry_id",id);
-
   loadData();
 }
 
-/* VIEW QR */
 function viewQR(qrValue){
   window.open(`view-qr.html?qr=${qrValue}`,"_blank");
 }
