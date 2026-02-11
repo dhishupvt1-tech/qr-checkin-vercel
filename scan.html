@@ -3,11 +3,11 @@
 <head>
   <title>TANTRA 2026 | Scan</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -19,7 +19,11 @@
       min-height:100vh;
     }
 
-    .page{min-height:100vh;display:flex;flex-direction:column}
+    .page{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
 
     .navbar{
       display:flex;
@@ -50,42 +54,61 @@
       margin-bottom:30px;
     }
 
+    /* ===== SCANNER WRAPPER FIX ===== */
+
     .scanner-wrapper{
       position:relative;
-      width:320px;
-      height:320px;
-      border-radius:14px;
+      width:350px;
+      height:350px;
+      border-radius:16px;
       overflow:hidden;
-      box-shadow:0 20px 40px rgba(0,0,0,0.6);
+      background:black;
+      box-shadow:0 20px 50px rgba(0,0,0,0.6);
       margin-bottom:30px;
     }
 
+    /* Force internal video to match wrapper exactly */
     #reader{
-      width:100%;
-      height:100%;
+      width:100% !important;
+      height:100% !important;
     }
 
-    /* QR Frame Overlay */
+    #reader > div {
+      width:100% !important;
+      height:100% !important;
+    }
+
+    #reader video{
+      width:100% !important;
+      height:100% !important;
+      object-fit:cover !important;
+    }
+
+    /* Remove extra scan region padding */
+    #reader__scan_region{
+      padding:0 !important;
+      margin:0 !important;
+    }
+
+    /* ===== GOLD CORNER FRAME ===== */
+
     .scanner-overlay{
       position:absolute;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
+      inset:0;
       pointer-events:none;
     }
 
     .corner{
-      width:40px;
-      height:40px;
-      border:4px solid #C9A44C;
+      width:60px;
+      height:60px;
+      border:5px solid #C9A44C;
       position:absolute;
     }
 
-    .corner.tl{top:10px;left:10px;border-right:none;border-bottom:none}
-    .corner.tr{top:10px;right:10px;border-left:none;border-bottom:none}
-    .corner.bl{bottom:10px;left:10px;border-right:none;border-top:none}
-    .corner.br{bottom:10px;right:10px;border-left:none;border-top:none}
+    .corner.tl{top:15px;left:15px;border-right:none;border-bottom:none}
+    .corner.tr{top:15px;right:15px;border-left:none;border-bottom:none}
+    .corner.bl{bottom:15px;left:15px;border-right:none;border-top:none}
+    .corner.br{bottom:15px;right:15px;border-left:none;border-top:none}
 
     input{
       padding:12px;
@@ -119,16 +142,10 @@
       max-width:500px;
       text-align:center;
       box-shadow:0 10px 30px rgba(0,0,0,0.5);
-      animation:fadeIn 0.4s ease;
     }
 
     .success{color:#7CFC7C}
     .error{color:#FF6B6B}
-
-    @keyframes fadeIn{
-      from{opacity:0;transform:translateY(10px)}
-      to{opacity:1;transform:translateY(0)}
-    }
 
   </style>
 </head>
@@ -173,7 +190,7 @@
 <script>
 const supabaseClient=supabase.createClient(
 "https://qwumwbmystwwhsjpllqn.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24i"
 );
 
 let currentRecord=null;
