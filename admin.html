@@ -27,6 +27,7 @@
       color:#C9A44C;
       text-decoration:none;
       margin-left:18px;
+      font-weight:bold;
     }
 
     .container{
@@ -53,6 +54,7 @@
       border-radius:6px;
       border:none;
       min-width:250px;
+      font-size:14px;
     }
 
     table{
@@ -84,21 +86,32 @@
     .CHECKED_IN{background:#4CAF50}
     .REJECTED{background:#F44336}
 
+    /* 🔥 FIXED ACTION BUTTONS */
     .actions{
       display:flex;
       justify-content:center;
-      gap:6px;
-      flex-wrap:wrap;
+      align-items:center;
+      gap:4px;
+      flex-wrap:nowrap;
     }
 
     button{
-      padding:6px 8px;
+      width:28px;
+      height:28px;
       border:none;
       cursor:pointer;
-      border-radius:4px;
-      font-size:12px;
+      border-radius:6px;
+      font-size:14px;
       font-weight:bold;
-      min-width:40px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:0.2s;
+    }
+
+    button:hover{
+      transform:scale(1.1);
+      opacity:0.9;
     }
 
     .btn-check{background:#4CAF50;color:white}
@@ -106,7 +119,6 @@
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
-
   </style>
 </head>
 
@@ -148,7 +160,7 @@
       <th>Status</th>
       <th>Created By</th>
       <th>Created At</th>
-      <th style="width:260px;">Actions</th>
+      <th style="width:150px;">Actions</th>
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
@@ -218,7 +230,14 @@ function renderTable(data) {
   data.forEach(a => {
 
     const formattedDate = a.created_at
-      ? new Date(a.created_at).toLocaleString()
+      ? new Date(a.created_at).toLocaleString("en-IN", {
+          day:"2-digit",
+          month:"short",
+          year:"numeric",
+          hour:"2-digit",
+          minute:"2-digit",
+          hour12:true
+        })
       : "-";
 
     tbody.innerHTML += `
@@ -232,11 +251,11 @@ function renderTable(data) {
         <td>${formattedDate}</td>
         <td>
           <div class="actions">
-            <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
-            <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
-            <button class="btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
-            <button class="btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-            <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">QR</button>
+            <button class="btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')" title="Check In">✔</button>
+            <button class="btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')" title="Reject">✖</button>
+            <button class="btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')" title="Pending">⏳</button>
+            <button class="btn-delete" onclick="deleteUser('${a.entry_id}')" title="Delete">🗑</button>
+            <button class="btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')" title="View QR">🔳</button>
           </div>
         </td>
       </tr>`;
