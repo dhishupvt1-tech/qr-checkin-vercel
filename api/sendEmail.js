@@ -69,7 +69,7 @@ export default async function handler(req, res) {
     /* ================= HEADER ================= */
     doc.rect(20, 20, pageW - 40, 110).fill("#C9A44C");
 
-    const logoPath = path.join(process.cwd(), "api", "logo.png");
+    const logoPath = path.join(process.cwd(), "api", "logo.Png");
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, centerX - 40, 35, { width: 80 });
     }
