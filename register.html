@@ -3,7 +3,6 @@
 <head>
   <title>TANTRA 2026 | Register</title>
 
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -23,7 +22,7 @@
       overflow:hidden;
     }
 
-    /* ===== UNLOCK OVERLAY ===== */
+    /* Unlock Overlay */
     .unlock-overlay{
       position:fixed;
       inset:0;
@@ -32,7 +31,6 @@
       justify-content:center;
       align-items:center;
       z-index:9999;
-      animation:fadeIn 0.6s ease;
     }
 
     .unlock-card{
@@ -41,42 +39,27 @@
       padding:50px 40px;
       border-radius:16px;
       text-align:center;
-      box-shadow:0 20px 40px rgba(0,0,0,0.5);
       width:380px;
-      position:relative;
-    }
-
-    .unlock-card::before{
-      content:"";
-      position:absolute;
-      width:200px;
-      height:200px;
-      background:#C9A44C;
-      filter:blur(120px);
-      opacity:0.2;
-      top:-60px;
-      right:-60px;
+      box-shadow:0 20px 40px rgba(0,0,0,0.5);
     }
 
     .unlock-card h2{
       font-family:'Playfair Display',serif;
       color:#C9A44C;
       margin-bottom:25px;
-      font-size:26px;
     }
 
     .unlock-input{
       width:100%;
       padding:15px;
       font-size:20px;
-      letter-spacing:8px;
       text-align:center;
       border:none;
       border-radius:10px;
       margin-bottom:20px;
-      outline:none;
       background:#1e3b5f;
       color:white;
+      outline:none;
     }
 
     .unlock-btn{
@@ -87,29 +70,11 @@
       border-radius:8px;
       font-weight:600;
       cursor:pointer;
-      transition:0.3s;
     }
 
-    .unlock-btn:hover{
-      background:#E6C36A;
-      transform:translateY(-2px);
-    }
+    .hidden{display:none}
 
-    .shake{
-      animation:shake 0.4s;
-    }
-
-    @keyframes shake{
-      0%,100%{transform:translateX(0)}
-      25%{transform:translateX(-8px)}
-      75%{transform:translateX(8px)}
-    }
-
-    .hidden{
-      display:none;
-    }
-
-    /* ===== NORMAL PAGE ===== */
+    /* Main Page */
     .page{
       min-height:100vh;
       display:flex;
@@ -119,10 +84,8 @@
     .navbar{
       display:flex;
       justify-content:space-between;
-      align-items:center;
       padding:18px 40px;
       background:#11263F;
-      box-shadow:0 4px 20px rgba(0,0,0,0.4);
     }
 
     .navbar a{
@@ -130,10 +93,7 @@
       text-decoration:none;
       margin-left:20px;
       font-weight:500;
-      transition:0.3s ease;
     }
-
-    .navbar a:hover{color:#E6C36A}
 
     .content{
       flex:1;
@@ -147,18 +107,15 @@
       background:#11263F;
       padding:40px;
       border-radius:14px;
-      box-shadow:0 15px 35px rgba(0,0,0,0.5);
       width:100%;
       max-width:450px;
-      animation:fadeIn 0.6s ease;
     }
 
-    h2.main-title{
+    h2{
       font-family:'Playfair Display',serif;
-      font-size:28px;
       color:#C9A44C;
-      margin-bottom:25px;
       text-align:center;
+      margin-bottom:25px;
     }
 
     input{
@@ -167,12 +124,6 @@
       margin-bottom:15px;
       border-radius:8px;
       border:none;
-      font-size:14px;
-    }
-
-    input:focus{
-      outline:none;
-      box-shadow:0 0 0 2px #C9A44C;
     }
 
     button.main-btn{
@@ -183,32 +134,19 @@
       border-radius:8px;
       font-weight:600;
       cursor:pointer;
-      transition:0.3s ease;
-    }
-
-    button.main-btn:hover{
-      background:#E6C36A;
-      transform:translateY(-2px);
     }
 
     #msg{margin-top:15px;min-height:20px}
     .success{color:#9cff9c}
     .error{color:#ff8080}
-
     #qrcode{text-align:center;margin-top:20px}
-
-    @keyframes fadeIn{
-      from{opacity:0;transform:translateY(10px)}
-      to{opacity:1;transform:translateY(0)}
-    }
   </style>
 </head>
 
 <body>
 
-<!-- 🔐 Unlock Overlay -->
 <div class="unlock-overlay" id="unlockOverlay">
-  <div class="unlock-card" id="unlockCard">
+  <div class="unlock-card">
     <h2>Secure Access</h2>
     <input type="password" id="accessInput" class="unlock-input" placeholder="ENTER CODE" maxlength="4">
     <button class="unlock-btn" onclick="checkAccess()">Unlock</button>
@@ -218,7 +156,7 @@
 <div class="page hidden" id="mainPage">
 
 <nav class="navbar">
-  <div><strong style="font-family:'Playfair Display',serif;color:#C9A44C">TANTRA 2026</strong></div>
+  <div><strong style="color:#C9A44C">TANTRA 2026</strong></div>
   <div>
     <a href="register.html">Register</a>
     <a href="scan.html">Scan</a>
@@ -230,7 +168,7 @@
 
 <div class="content">
   <div class="card">
-    <h2 class="main-title">Register Entry</h2>
+    <h2>Register Entry</h2>
 
     <input id="nameInput" placeholder="Full Name">
     <input id="emailInput" placeholder="Email Address">
@@ -246,61 +184,97 @@
 </div>
 
 <script>
-/* 🔐 ACCESS CONTROL */
 const ACCESS_CODE="5284";
 
 function checkAccess(){
   const input=document.getElementById("accessInput").value;
-  const card=document.getElementById("unlockCard");
-
   if(input===ACCESS_CODE){
     document.getElementById("unlockOverlay").style.display="none";
     document.getElementById("mainPage").classList.remove("hidden");
     document.body.style.overflow="auto";
-  }else{
-    card.classList.add("shake");
-    setTimeout(()=>card.classList.remove("shake"),400);
   }
 }
 
-/* ===== SUPABASE LOGIC ===== */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
-  "YOUR_ANON_KEY"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
 let currentUser=null;
-(async()=>{currentUser=await requireAuth(supabaseClient);if(!currentUser)return})();
+(async()=>{
+  currentUser=await requireAuth(supabaseClient);
+  if(!currentUser)return;
+})();
 
 async function register(){
-const name=nameInput.value.trim();
-const email=emailInput.value.trim();
-const regNo=regNoInput.value.trim().toUpperCase();
-const msg=document.getElementById("msg");
+  const msg=document.getElementById("msg");
+  const name=nameInput.value.trim();
+  const email=emailInput.value.trim();
+  const regNo=regNoInput.value.trim().toUpperCase();
 
-if(!name||!email||!regNo){
-msg.innerText="⚠️ All fields required";
-msg.className="error";
-return;
-}
+  if(!name||!email||!regNo){
+    msg.innerText="⚠️ All fields required";
+    msg.className="error";
+    return;
+  }
 
-const qrValue=crypto.randomUUID();
-const entryId="T26-"+Math.random().toString(36).substring(2,8).toUpperCase();
+  const {data:existing}=await supabaseClient
+    .from("attendees")
+    .select("reg_no")
+    .eq("reg_no",regNo)
+    .maybeSingle();
 
-await supabaseClient.from("attendees").insert({
-name,email,reg_no:regNo,qr:qrValue,entry_id:entryId,status:"PENDING",created_by:currentUser.email
-});
+  if(existing){
+    msg.innerText="❌ Register No already registered";
+    msg.className="error";
+    return;
+  }
 
-qrcode.innerHTML="";
-new QRCode(qrcode,{text:qrValue,width:200,height:200});
+  const qrValue=crypto.randomUUID();
+  const entryId="T26-"+Math.random().toString(36).substring(2,8).toUpperCase();
 
-msg.innerText=`✅ Registered\n🆔 ${entryId}`;
-msg.className="success";
+  const {error}=await supabaseClient
+    .from("attendees")
+    .insert({
+      name,
+      email,
+      reg_no:regNo,
+      qr:qrValue,
+      entry_id:entryId,
+      status:"PENDING",
+      created_by: currentUser ? currentUser.email : "UNKNOWN"
+    });
+
+  if(error){
+    msg.innerText=error.message;
+    msg.className="error";
+    return;
+  }
+
+  qrcode.innerHTML="";
+  new QRCode(qrcode,{text:qrValue,width:200,height:200});
+
+  try{
+    await fetch("/api/sendEmail",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        name,
+        email,
+        reg_no:regNo,
+        qr_text:qrValue,
+        entry_id:entryId
+      })
+    });
+  }catch{}
+
+  msg.innerText=`✅ Registered\n🆔 ${entryId}`;
+  msg.className="success";
 }
 
 async function logout(){
-await supabaseClient.auth.signOut();
-window.location.href="login.html";
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
