@@ -40,28 +40,16 @@
       box-shadow:0 20px 40px rgba(0,0,0,0.5);
     }
 
-    .lock-card h2{
-      color:#C9A44C;
-      margin-bottom:20px;
-    }
+    .lock-card h2{color:#C9A44C;margin-bottom:20px}
 
-    .dots{
-      display:flex;
-      justify-content:center;
-      gap:10px;
-      margin-bottom:25px;
-    }
+    .dots{display:flex;justify-content:center;gap:10px;margin-bottom:25px}
 
     .dot{
-      width:14px;
-      height:14px;
-      border-radius:50%;
+      width:14px;height:14px;border-radius:50%;
       border:2px solid #C9A44C;
     }
 
-    .dot.filled{
-      background:#C9A44C;
-    }
+    .dot.filled{background:#C9A44C}
 
     .keypad{
       display:grid;
@@ -79,15 +67,9 @@
       text-align:center;
     }
 
-    .key:hover{
-      background:#C9A44C;
-      color:black;
-    }
+    .key:hover{background:#C9A44C;color:black}
 
-    .shake{
-      animation:shake 0.4s;
-    }
-
+    .shake{animation:shake 0.4s}
     @keyframes shake{
       0%,100%{transform:translateX(0)}
       25%{transform:translateX(-8px)}
@@ -96,7 +78,7 @@
 
     .hidden{display:none}
 
-    /* ================= ADMIN PAGE ================= */
+    /* ================= ADMIN ================= */
 
     .navbar{
       display:flex;
@@ -115,20 +97,16 @@
     }
 
     .container{
-      padding:30px;
+      padding:25px;
       max-width:1600px;
       margin:auto;
+      overflow:auto;
     }
 
-    h2{
-      margin-bottom:20px;
-      color:#C9A44C;
-    }
+    h2{margin-bottom:20px;color:#C9A44C}
 
-    /* 🔥 FIXED ALIGNMENT */
     .top-controls{
       display:flex;
-      align-items:center;
       gap:10px;
       margin-bottom:20px;
     }
@@ -138,7 +116,6 @@
       padding:10px;
       border-radius:6px;
       border:none;
-      font-size:14px;
     }
 
     .top-controls select{
@@ -146,19 +123,18 @@
       padding:10px;
       border-radius:6px;
       border:none;
-      font-size:14px;
     }
 
     table{
       width:100%;
       border-collapse:collapse;
+      font-size:13px;
     }
 
     th,td{
-      padding:10px;
+      padding:8px;
       border:1px solid #1e3b5f;
       text-align:center;
-      font-size:13px;
       white-space:nowrap;
     }
 
@@ -166,6 +142,18 @@
       background:#11263F;
       color:#C9A44C;
     }
+
+    .photo-thumb{
+      width:60px;
+      height:60px;
+      object-fit:cover;
+      border-radius:10px;
+      border:2px solid #C9A44C;
+      cursor:pointer;
+      transition:0.3s;
+    }
+
+    .photo-thumb:hover{transform:scale(1.1)}
 
     .badge{
       padding:4px 8px;
@@ -185,15 +173,10 @@
     }
 
     button.action{
-      width:28px;
-      height:28px;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      font-size:14px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      width:28px;height:28px;
+      border:none;border-radius:6px;
+      cursor:pointer;font-size:14px;
+      display:flex;align-items:center;justify-content:center;
     }
 
     .btn-check{background:#4CAF50;color:white}
@@ -202,27 +185,26 @@
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
 
-    /* 📱 MOBILE FIX */
-    @media(max-width:600px){
-      .top-controls{
-        flex-direction:row;
-      }
-
-      .top-controls input{
-        flex:1.5;
-        font-size:13px;
-      }
-
-      .top-controls select{
-        flex:1;
-        font-size:13px;
-      }
-
-      th,td{
-        font-size:11px;
-        padding:6px;
-      }
+    /* ===== PHOTO MODAL ===== */
+    .photo-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.8);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      display:none;
     }
+
+    .photo-modal img{
+      max-width:90%;
+      max-height:90%;
+      border-radius:16px;
+      border:4px solid #C9A44C;
+      box-shadow:0 20px 50px black;
+    }
+
   </style>
 </head>
 
@@ -267,6 +249,7 @@
 <table>
 <thead>
 <tr>
+<th>Photo</th>
 <th>Name</th>
 <th>Email</th>
 <th>Reg No</th>
@@ -274,7 +257,7 @@
 <th>Status</th>
 <th>Created By</th>
 <th>Created At</th>
-<th style="width:150px;">Actions</th>
+<th>Actions</th>
 </tr>
 </thead>
 <tbody id="tbody"></tbody>
@@ -283,11 +266,14 @@
 </div>
 </div>
 
+<!-- PHOTO MODAL -->
+<div class="photo-modal" id="photoModal" onclick="closePhoto()">
+  <img id="modalImg">
+</div>
+
 <script>
-/* ===== PIN LOCK LOGIC ===== */
 const ACCESS_CODE="528494";
 let enteredPin="";
-
 const dotsContainer=document.getElementById("dots");
 const keypad=document.getElementById("keypad");
 
@@ -336,7 +322,7 @@ function updateDots(){
   });
 }
 
-/* ===== SUPABASE LOGIC ===== */
+/* ===== SUPABASE ===== */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
@@ -378,13 +364,19 @@ function applyFilters(){
 function renderTable(data){
   const tbody=document.getElementById("tbody");
   tbody.innerHTML="";
+
   data.forEach(a=>{
     const formattedDate=a.created_at
       ? new Date(a.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})
       : "-";
 
+    const photo=a.id_photo_url
+      ? `<img src="${a.id_photo_url}" class="photo-thumb" onclick="openPhoto('${a.id_photo_url}')">`
+      : "-";
+
     tbody.innerHTML+=`
       <tr>
+        <td>${photo}</td>
         <td>${a.name||"-"}</td>
         <td>${a.email||"-"}</td>
         <td>${a.reg_no||"-"}</td>
@@ -403,6 +395,15 @@ function renderTable(data){
         </td>
       </tr>`;
   });
+}
+
+function openPhoto(url){
+  document.getElementById("modalImg").src=url;
+  document.getElementById("photoModal").style.display="flex";
+}
+
+function closePhoto(){
+  document.getElementById("photoModal").style.display="none";
 }
 
 document.getElementById("searchInput").addEventListener("input",applyFilters);
