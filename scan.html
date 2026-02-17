@@ -54,8 +54,6 @@
       margin-bottom:30px;
     }
 
-    /* 🔥 PERFECT RESPONSIVE SCANNER */
-
     .scanner-wrapper{
       position:relative;
       width:min(90vw,400px);
@@ -67,28 +65,11 @@
       margin-bottom:30px;
     }
 
-    #reader{
-      width:100% !important;
-      height:100% !important;
-    }
-
-    #reader > div{
-      width:100% !important;
-      height:100% !important;
-    }
-
-    #reader video{
+    #reader, #reader video{
       width:100% !important;
       height:100% !important;
       object-fit:cover !important;
     }
-
-    #reader__scan_region{
-      padding:0 !important;
-      margin:0 !important;
-    }
-
-    /* GOLD CORNER FRAME */
 
     .scanner-overlay{
       position:absolute;
@@ -124,6 +105,7 @@
       font-weight:600;
       cursor:pointer;
       transition:0.3s;
+      margin:5px;
     }
 
     button:hover{
@@ -142,9 +124,18 @@
       box-shadow:0 10px 30px rgba(0,0,0,0.5);
     }
 
+    .result-box img{
+      width:150px;
+      height:150px;
+      object-fit:cover;
+      border-radius:12px;
+      margin-top:15px;
+      border:3px solid #C9A44C;
+      box-shadow:0 8px 20px rgba(0,0,0,0.6);
+    }
+
     .success{color:#7CFC7C}
     .error{color:#FF6B6B}
-
   </style>
 </head>
 
@@ -168,7 +159,6 @@
 
 <div class="scanner-wrapper">
   <div id="reader"></div>
-
   <div class="scanner-overlay">
     <div class="corner tl"></div>
     <div class="corner tr"></div>
@@ -201,7 +191,6 @@ initScanner();
 })();
 
 function initScanner(){
-
   const wrapper=document.querySelector(".scanner-wrapper");
   const size=wrapper.offsetWidth;
 
@@ -209,10 +198,7 @@ function initScanner(){
 
   scannerInstance.start(
     { facingMode:"environment" },
-    {
-      fps:10,
-      qrbox:{ width:size-60, height:size-60 }
-    },
+    { fps:10, qrbox:{ width:size-60, height:size-60 } },
     async qrText=>{
       const {data}=await supabaseClient
         .from("attendees")
@@ -247,6 +233,10 @@ else{
 status="<p class='error'>❌ Entry Rejected</p>";
 }
 
+const photoHTML = data.id_photo_url
+  ? `<img src="${data.id_photo_url}" alt="ID Photo">`
+  : "";
+
 result.innerHTML=`
 <div class="result-box">
 <h3>${data.name}</h3>
@@ -254,6 +244,7 @@ result.innerHTML=`
 <p>Reg No: ${data.reg_no}</p>
 <p>Entry ID: ${data.entry_id}</p>
 ${status}
+${photoHTML}
 ${actions}
 </div>`;
 }
