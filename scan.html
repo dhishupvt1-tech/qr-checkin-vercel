@@ -9,6 +9,8 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
 
@@ -54,9 +56,10 @@
       margin-bottom:30px;
     }
 
+    /* SCANNER */
     .scanner-wrapper{
       position:relative;
-      width:min(90vw,400px);
+      width:min(90vw,420px);
       aspect-ratio:1/1;
       border-radius:16px;
       overflow:hidden;
@@ -69,12 +72,6 @@
       width:100% !important;
       height:100% !important;
       object-fit:cover !important;
-    }
-
-    .scanner-overlay{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
     }
 
     .corner{
@@ -104,8 +101,8 @@
       border-radius:8px;
       font-weight:600;
       cursor:pointer;
-      transition:0.3s;
       margin:5px;
+      transition:0.3s;
     }
 
     button:hover{
@@ -113,29 +110,75 @@
       transform:translateY(-2px);
     }
 
-    .result-box{
+    /* RESULT CARD */
+    .result-card{
       margin-top:30px;
-      padding:25px;
-      border-radius:12px;
-      background:#11263F;
       width:100%;
-      max-width:500px;
-      text-align:center;
-      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      max-width:900px;
+      background:#11263F;
+      border-radius:18px;
+      padding:30px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+      display:flex;
+      flex-wrap:wrap;
+      gap:30px;
+      align-items:center;
+      justify-content:center;
+      animation:fadeIn 0.4s ease;
     }
 
-    .result-box img{
-      width:150px;
-      height:150px;
+    .photo-section{
+      flex:1;
+      min-width:280px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .photo-section img{
+      width:100%;
+      max-width:320px;
+      height:auto;
+      border-radius:16px;
+      border:4px solid #C9A44C;
+      box-shadow:0 15px 40px rgba(0,0,0,0.7);
       object-fit:cover;
-      border-radius:12px;
-      margin-top:15px;
-      border:3px solid #C9A44C;
-      box-shadow:0 8px 20px rgba(0,0,0,0.6);
     }
 
-    .success{color:#7CFC7C}
-    .error{color:#FF6B6B}
+    .info-section{
+      flex:1;
+      min-width:280px;
+      text-align:left;
+    }
+
+    .info-section h3{
+      font-size:28px;
+      color:#C9A44C;
+      margin-bottom:10px;
+    }
+
+    .info-section p{
+      margin-bottom:8px;
+      font-size:16px;
+    }
+
+    .success{color:#7CFC7C;font-weight:600}
+    .error{color:#FF6B6B;font-weight:600}
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(10px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    @media(max-width:768px){
+      .result-card{
+        flex-direction:column;
+        text-align:center;
+      }
+      .info-section{
+        text-align:center;
+      }
+    }
+
   </style>
 </head>
 
@@ -159,12 +202,10 @@
 
 <div class="scanner-wrapper">
   <div id="reader"></div>
-  <div class="scanner-overlay">
-    <div class="corner tl"></div>
-    <div class="corner tr"></div>
-    <div class="corner bl"></div>
-    <div class="corner br"></div>
-  </div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
 </div>
 
 <input id="entryIdInput" placeholder="Manual Entry ID">
@@ -233,19 +274,23 @@ else{
 status="<p class='error'>❌ Entry Rejected</p>";
 }
 
-const photoHTML = data.id_photo_url
-  ? `<img src="${data.id_photo_url}" alt="ID Photo">`
-  : "";
+const photoHTML=data.id_photo_url
+? `<img src="${data.id_photo_url}">`
+: "";
 
 result.innerHTML=`
-<div class="result-box">
-<h3>${data.name}</h3>
-<p>${data.email}</p>
-<p>Reg No: ${data.reg_no}</p>
-<p>Entry ID: ${data.entry_id}</p>
-${status}
-${photoHTML}
-${actions}
+<div class="result-card">
+  <div class="photo-section">
+    ${photoHTML}
+  </div>
+  <div class="info-section">
+    <h3>${data.name}</h3>
+    <p>${data.email}</p>
+    <p>Reg No: ${data.reg_no}</p>
+    <p>Entry ID: ${data.entry_id}</p>
+    ${status}
+    ${actions}
+  </div>
 </div>`;
 }
 
@@ -276,7 +321,7 @@ renderRecord(data);
 }
 
 function showMessage(text,type){
-result.innerHTML=`<div class="result-box ${type}">${text}</div>`;
+result.innerHTML=`<div class="result-card ${type}">${text}</div>`;
 }
 
 async function logout(){
