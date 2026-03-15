@@ -144,7 +144,7 @@ export default async function handler(req, res) {
 3. Admission is reserved with the Committee and Faculty Coordinators.
 4. No vehicle parking is allowed inside the campus.
 5. Only the SIDE GATE shall be accessed by students.
-6. Gates open at 8:00 AM and close at 11:00 AM sharp.
+6. Gates open at 8:00 AM and close at 10:00 AM sharp.
 7. ID cards MUST be carried; entry will be rejected otherwise.`,
         70,
         rulesTop + 35,
