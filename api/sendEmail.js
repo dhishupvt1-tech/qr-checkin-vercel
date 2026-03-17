@@ -143,7 +143,7 @@ export default async function handler(req, res) {
 2. No re-entry is allowed.
 3. Admission is reserved with the Committee and Faculty Coordinators.
 4. No vehicle parking is allowed inside the campus.
-5. Gates open at 8:00 AM and close at 10:00 AM sharp.
+5. Gates open at 8:00 AM and closes at 10:00 AM sharp.
 6. ID cards MUST be carried; entry will be rejected otherwise.`,
         70,
         rulesTop + 35,
