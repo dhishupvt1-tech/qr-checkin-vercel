@@ -19,7 +19,7 @@
       overflow:hidden;
     }
 
-    /* ================= PIN LOCK ================= */
+    /* PIN LOCK */
     .lock-overlay{
       position:fixed;
       inset:0;
@@ -78,8 +78,7 @@
 
     .hidden{display:none}
 
-    /* ================= ADMIN ================= */
-
+    /* ADMIN */
     .navbar{
       display:flex;
       justify-content:space-between;
@@ -185,7 +184,29 @@
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
 
-    /* ===== PHOTO MODAL ===== */
+    /* Pagination */
+    .pagination{
+      margin-top:15px;
+      display:flex;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .page-btn{
+      padding:6px 10px;
+      background:#11263F;
+      border:1px solid #C9A44C;
+      color:#C9A44C;
+      cursor:pointer;
+      border-radius:5px;
+    }
+
+    .page-btn.active{
+      background:#C9A44C;
+      color:black;
+    }
+
+    /* Photo Modal */
     .photo-modal{
       position:fixed;
       inset:0;
@@ -204,7 +225,6 @@
       border:4px solid #C9A44C;
       box-shadow:0 20px 50px black;
     }
-
   </style>
 </head>
 
@@ -262,6 +282,8 @@
 </thead>
 <tbody id="tbody"></tbody>
 </table>
+
+<div class="pagination" id="pagination"></div>
 
 </div>
 </div>
@@ -322,13 +344,17 @@ function updateDots(){
   });
 }
 
-/* ===== SUPABASE ===== */
+/* ===== SUPABASE PAGINATION ===== */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
 );
 
-let allData=[];
+let currentPage=1;
+const rowsPerPage=50;
+let totalRows=0;
+let searchValue="";
+let sortValue="newest";
 
 (async()=>{
   const user=await requireAuth(supabaseClient);
@@ -337,28 +363,26 @@ let allData=[];
 })();
 
 async function loadData(){
-  const {data}=await supabaseClient.from("attendees").select("*");
-  allData=data||[];
-  applyFilters();
-}
+  const from=(currentPage-1)*rowsPerPage;
+  const to=from+rowsPerPage-1;
 
-function applyFilters(){
-  const searchValue=document.getElementById("searchInput").value.toLowerCase();
-  const sortValue=document.getElementById("sortSelect").value;
+  let query=supabaseClient
+    .from("attendees")
+    .select("*",{count:"exact"});
 
-  let filtered=allData.filter(a=>
-    (a.name||"").toLowerCase().includes(searchValue)||
-    (a.email||"").toLowerCase().includes(searchValue)||
-    (a.reg_no||"").toLowerCase().includes(searchValue)||
-    (a.entry_id||"").toLowerCase().includes(searchValue)
-  );
+  if(sortValue==="newest") query=query.order("created_at",{ascending:false});
+  if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
+  if(sortValue==="name") query=query.order("name",{ascending:true});
+  if(sortValue==="status") query=query.order("status",{ascending:true});
 
-  if(sortValue==="newest") filtered.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  if(sortValue==="oldest") filtered.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-  if(sortValue==="name") filtered.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-  if(sortValue==="status") filtered.sort((a,b)=>(a.status||"").localeCompare(b.status||""));
+  if(searchValue){
+    query=query.or(`name.ilike.%${searchValue}%,email.ilike.%${searchValue}%,reg_no.ilike.%${searchValue}%,entry_id.ilike.%${searchValue}%`);
+  }
 
-  renderTable(filtered);
+  const {data,count}=await query.range(from,to);
+  totalRows=count;
+  renderTable(data||[]);
+  renderPagination();
 }
 
 function renderTable(data){
@@ -397,17 +421,36 @@ function renderTable(data){
   });
 }
 
-function openPhoto(url){
-  document.getElementById("modalImg").src=url;
-  document.getElementById("photoModal").style.display="flex";
+function renderPagination(){
+  const pageCount=Math.ceil(totalRows/rowsPerPage);
+  const pagination=document.getElementById("pagination");
+  pagination.innerHTML="";
+
+  for(let i=1;i<=pageCount;i++){
+    const btn=document.createElement("button");
+    btn.innerText=i;
+    btn.className="page-btn";
+    if(i===currentPage) btn.classList.add("active");
+
+    btn.onclick=()=>{
+      currentPage=i;
+      loadData();
+    };
+
+    pagination.appendChild(btn);
+  }
 }
 
-function closePhoto(){
-  document.getElementById("photoModal").style.display="none";
-}
+document.getElementById("searchInput").addEventListener("input",(e)=>{
+  searchValue=e.target.value;
+  currentPage=1;
+  loadData();
+});
 
-document.getElementById("searchInput").addEventListener("input",applyFilters);
-document.getElementById("sortSelect").addEventListener("change",applyFilters);
+document.getElementById("sortSelect").addEventListener("change",(e)=>{
+  sortValue=e.target.value;
+  loadData();
+});
 
 async function updateStatus(id,status){
   await supabaseClient.from("attendees").update({status}).eq("entry_id",id);
@@ -422,6 +465,15 @@ async function deleteUser(id){
 
 function viewQR(qrValue){
   window.open(`view-qr.html?qr=${qrValue}`,"_blank");
+}
+
+function openPhoto(url){
+  document.getElementById("modalImg").src=url;
+  document.getElementById("photoModal").style.display="flex";
+}
+
+function closePhoto(){
+  document.getElementById("photoModal").style.display="none";
 }
 
 async function logout(){
