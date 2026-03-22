@@ -38,8 +38,6 @@
       text-align:center;
     }
 
-    .lock-card h2{color:#C9A44C;margin-bottom:20px}
-
     .dots{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
     .dot{width:14px;height:14px;border-radius:50%;border:2px solid #C9A44C}
     .dot.filled{background:#C9A44C}
@@ -141,15 +139,22 @@
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
-    .btn-qr{background:#C9A44C;color:black}
 
     /* PAGINATION */
-    .pagination{
-      margin-top:15px;
+    .pagination-container{
       display:flex;
       justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:15px;
+    }
+
+    .pagination{
+      display:flex;
       flex-wrap:wrap;
       gap:6px;
+      justify-content:center;
     }
 
     .page-btn{
@@ -166,6 +171,28 @@
       background:#C9A44C;
       color:black;
       font-weight:bold;
+    }
+
+    .goto-box{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:13px;
+    }
+
+    .goto-box input{
+      width:70px;
+      padding:5px;
+      border-radius:5px;
+      border:none;
+    }
+
+    .goto-box button{
+      padding:5px 10px;
+      background:#C9A44C;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
     }
 
     /* PHOTO MODAL */
@@ -247,7 +274,14 @@
 <tbody id="tbody"></tbody>
 </table>
 
-<div class="pagination" id="pagination"></div>
+<div class="pagination-container">
+  <div class="pagination" id="pagination"></div>
+  <div class="goto-box">
+    <span>Page:</span>
+    <input type="number" id="gotoPage" min="1">
+    <button onclick="goToPage()">Go</button>
+  </div>
+</div>
 
 </div>
 </div>
@@ -330,7 +364,7 @@ async function loadData(){
 
   let query=supabaseClient
     .from("attendees")
-    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url,qr",{count:"exact"});
+    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url",{count:"exact"});
 
   if(sortValue==="newest") query=query.order("created_at",{ascending:false});
   if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
@@ -389,41 +423,53 @@ function renderPagination(){
 
   if(pageCount <= 1) return;
 
-  const prev = document.createElement("button");
-  prev.innerText = "«";
-  prev.className = "page-btn";
-  prev.onclick = () => { if(currentPage > 1){ currentPage--; loadData(); }};
-  pagination.appendChild(prev);
+  const createBtn = (text, page) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "page-btn";
+    if(page === currentPage) btn.classList.add("active");
+    btn.onclick = () => {
+      currentPage = page;
+      loadData();
+    };
+    return btn;
+  };
+
+  if(currentPage > 1){
+    pagination.appendChild(createBtn("«", currentPage - 1));
+  }
 
   let start = Math.max(1, currentPage - 2);
   let end = Math.min(pageCount, currentPage + 2);
 
   if(start > 1){
-    addBtn(1);
+    pagination.appendChild(createBtn(1, 1));
     if(start > 2) pagination.innerHTML += "<span>...</span>";
   }
 
-  for(let i=start;i<=end;i++) addBtn(i);
+  for(let i=start;i<=end;i++){
+    pagination.appendChild(createBtn(i, i));
+  }
 
   if(end < pageCount){
-    if(end < pageCount-1) pagination.innerHTML += "<span>...</span>";
-    addBtn(pageCount);
+    if(end < pageCount - 1) pagination.innerHTML += "<span>...</span>";
+    pagination.appendChild(createBtn(pageCount, pageCount));
   }
 
-  const next = document.createElement("button");
-  next.innerText = "»";
-  next.className = "page-btn";
-  next.onclick = () => { if(currentPage < pageCount){ currentPage++; loadData(); }};
-  pagination.appendChild(next);
-
-  function addBtn(i){
-    const btn=document.createElement("button");
-    btn.innerText=i;
-    btn.className="page-btn";
-    if(i===currentPage) btn.classList.add("active");
-    btn.onclick=()=>{ currentPage=i; loadData(); };
-    pagination.appendChild(btn);
+  if(currentPage < pageCount){
+    pagination.appendChild(createBtn("»", currentPage + 1));
   }
+}
+
+function goToPage(){
+  const pageCount = Math.ceil(totalRows / rowsPerPage);
+  let page = parseInt(document.getElementById("gotoPage").value);
+
+  if(!page || page < 1) page = 1;
+  if(page > pageCount) page = pageCount;
+
+  currentPage = page;
+  loadData();
 }
 
 document.getElementById("searchInput").addEventListener("input",(e)=>{
