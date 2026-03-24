@@ -139,6 +139,7 @@
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
+    .btn-qr{background:#C9A44C;color:black}
 
     /* PAGINATION */
     .pagination-container{
@@ -364,7 +365,7 @@ async function loadData(){
 
   let query=supabaseClient
     .from("attendees")
-    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url",{count:"exact"});
+    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url,qr",{count:"exact"});
 
   if(sortValue==="newest") query=query.order("created_at",{ascending:false});
   if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
@@ -410,10 +411,15 @@ function renderTable(data){
             <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
             <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
           </div>
         </td>
       </tr>`;
   });
+}
+
+function viewQR(qrValue){
+  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
 }
 
 function renderPagination(){
