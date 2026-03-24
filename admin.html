@@ -18,6 +18,8 @@
       overflow:hidden;
     }
 
+    .hidden{display:none}
+
     /* PIN LOCK */
     .lock-overlay{
       position:fixed;
@@ -30,8 +32,8 @@
     }
 
     .lock-card{
-      width:340px;
-      padding:35px;
+      width:300px;
+      padding:30px;
       background:rgba(255,255,255,0.06);
       backdrop-filter:blur(20px);
       border-radius:16px;
@@ -43,12 +45,10 @@
     .dot.filled{background:#C9A44C}
 
     .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .key{padding:16px;background:#11263F;border-radius:10px;cursor:pointer}
+    .key{padding:14px;background:#11263F;border-radius:10px;cursor:pointer}
     .key:hover{background:#C9A44C;color:black}
 
-    .hidden{display:none}
-
-    /* ADMIN */
+    /* NAVBAR */
     .navbar{
       display:flex;
       justify-content:space-between;
@@ -139,6 +139,7 @@
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
+    .btn-qr{background:#C9A44C;color:black}
 
     /* PAGINATION */
     .pagination-container{
@@ -226,7 +227,7 @@
 <!-- PIN LOCK -->
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-card">
-    <h2>Admin Access</h2>
+    <h3 style="margin-bottom:15px;">Admin Access</h3>
     <div class="dots" id="dots"></div>
     <div class="keypad" id="keypad"></div>
   </div>
@@ -291,9 +292,9 @@
 </div>
 
 <script>
+/* PIN LOCK */
 const ACCESS_CODE="528494";
 let enteredPin="";
-
 const dotsContainer=document.getElementById("dots");
 const keypad=document.getElementById("keypad");
 
@@ -326,6 +327,7 @@ function handleKey(value){
       document.getElementById("lockOverlay").style.display="none";
       document.getElementById("mainAdmin").classList.remove("hidden");
       document.body.style.overflow="auto";
+      initAdmin();
     }else{
       enteredPin="";
       updateDots();
@@ -352,11 +354,11 @@ let totalRows=0;
 let searchValue="";
 let sortValue="newest";
 
-(async()=>{
+async function initAdmin(){
   const user=await requireAuth(supabaseClient);
   if(!user)return;
   loadData();
-})();
+}
 
 async function loadData(){
   const from=(currentPage-1)*rowsPerPage;
@@ -364,7 +366,7 @@ async function loadData(){
 
   let query=supabaseClient
     .from("attendees")
-    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url",{count:"exact"});
+    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url,qr",{count:"exact"});
 
   if(sortValue==="newest") query=query.order("created_at",{ascending:false});
   if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
@@ -410,6 +412,7 @@ function renderTable(data){
             <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
             <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
           </div>
         </td>
       </tr>`;
@@ -472,17 +475,6 @@ function goToPage(){
   loadData();
 }
 
-document.getElementById("searchInput").addEventListener("input",(e)=>{
-  searchValue=e.target.value;
-  currentPage=1;
-  loadData();
-});
-
-document.getElementById("sortSelect").addEventListener("change",(e)=>{
-  sortValue=e.target.value;
-  loadData();
-});
-
 async function updateStatus(id,status){
   await supabaseClient.from("attendees").update({status}).eq("entry_id",id);
   loadData();
@@ -494,6 +486,10 @@ async function deleteUser(id){
   loadData();
 }
 
+function viewQR(qrValue){
+  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
+}
+
 function openPhoto(url){
   document.getElementById("modalImg").src=url;
   document.getElementById("photoModal").style.display="flex";
@@ -502,6 +498,17 @@ function openPhoto(url){
 function closePhoto(){
   document.getElementById("photoModal").style.display="none";
 }
+
+document.getElementById("searchInput").addEventListener("input",(e)=>{
+  searchValue=e.target.value;
+  currentPage=1;
+  loadData();
+});
+
+document.getElementById("sortSelect").addEventListener("change",(e)=>{
+  sortValue=e.target.value;
+  loadData();
+});
 
 async function logout(){
   await supabaseClient.auth.signOut();
