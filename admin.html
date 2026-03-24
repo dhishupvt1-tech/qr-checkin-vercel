@@ -139,7 +139,7 @@
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
-    .btn-qr{background:#C9A44C;color:black}
+    .btn-pdf{background:#C9A44C;color:black}
 
     /* PAGINATION */
     .pagination-container{
@@ -411,15 +411,48 @@ function renderTable(data){
             <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
             <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
+            <button class="action btn-pdf" onclick="downloadPDF('${a.name}','${a.reg_no}','${a.entry_id}','${encodeURIComponent(a.qr)}')">📄</button>
           </div>
         </td>
       </tr>`;
   });
 }
 
-function viewQR(qrValue){
-  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
+function downloadPDF(name, regno, entryid, qr){
+  const qrValue = decodeURIComponent(qr);
+  const win = window.open("", "_blank");
+
+  win.document.write(`
+    <html>
+    <head>
+      <title>TANTRA 2026 Entry Pass</title>
+      <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+      <style>
+        body{font-family:Arial;text-align:center;padding:30px;}
+        .card{border:2px solid black;padding:20px;width:350px;margin:auto;}
+        #qrcode{margin-top:20px}
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h2>TANTRA 2026</h2>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Reg No:</b> ${regno}</p>
+        <p><b>Entry ID:</b> ${entryid}</p>
+        <p><b>Date:</b> March 27, 2026</p>
+        <div id="qrcode"></div>
+      </div>
+      <script>
+        new QRCode(document.getElementById("qrcode"), {
+          text: "${qrValue}",
+          width: 150,
+          height: 150
+        });
+        setTimeout(()=>window.print(),1000);
+      </script>
+    </body>
+    </html>
+  `);
 }
 
 function renderPagination(){
@@ -434,16 +467,11 @@ function renderPagination(){
     btn.innerText = text;
     btn.className = "page-btn";
     if(page === currentPage) btn.classList.add("active");
-    btn.onclick = () => {
-      currentPage = page;
-      loadData();
-    };
+    btn.onclick = () => { currentPage = page; loadData(); };
     return btn;
   };
 
-  if(currentPage > 1){
-    pagination.appendChild(createBtn("«", currentPage - 1));
-  }
+  if(currentPage > 1) pagination.appendChild(createBtn("«", currentPage - 1));
 
   let start = Math.max(1, currentPage - 2);
   let end = Math.min(pageCount, currentPage + 2);
@@ -453,27 +481,21 @@ function renderPagination(){
     if(start > 2) pagination.innerHTML += "<span>...</span>";
   }
 
-  for(let i=start;i<=end;i++){
-    pagination.appendChild(createBtn(i, i));
-  }
+  for(let i=start;i<=end;i++) pagination.appendChild(createBtn(i, i));
 
   if(end < pageCount){
     if(end < pageCount - 1) pagination.innerHTML += "<span>...</span>";
     pagination.appendChild(createBtn(pageCount, pageCount));
   }
 
-  if(currentPage < pageCount){
-    pagination.appendChild(createBtn("»", currentPage + 1));
-  }
+  if(currentPage < pageCount) pagination.appendChild(createBtn("»", currentPage + 1));
 }
 
 function goToPage(){
   const pageCount = Math.ceil(totalRows / rowsPerPage);
   let page = parseInt(document.getElementById("gotoPage").value);
-
   if(!page || page < 1) page = 1;
   if(page > pageCount) page = pageCount;
-
   currentPage = page;
   loadData();
 }
