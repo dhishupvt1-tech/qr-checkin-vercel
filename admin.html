@@ -1,3 +1,5 @@
+This code is working
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,6 +20,7 @@
       overflow:hidden;
     }
 
+    /* PIN LOCK */
     .lock-overlay{
       position:fixed;
       inset:0;
@@ -47,6 +50,7 @@
 
     .hidden{display:none}
 
+    /* ADMIN */
     .navbar{
       display:flex;
       justify-content:space-between;
@@ -137,8 +141,9 @@
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
-    .btn-pdf{background:#C9A44C;color:black}
+    .btn-qr{background:#C9A44C;color:black}
 
+    /* PAGINATION */
     .pagination-container{
       display:flex;
       justify-content:center;
@@ -193,6 +198,7 @@
       cursor:pointer;
     }
 
+    /* PHOTO MODAL */
     .photo-modal{
       position:fixed;
       inset:0;
@@ -220,6 +226,7 @@
 
 <body>
 
+<!-- PIN LOCK -->
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-card">
     <h2>Admin Access</h2>
@@ -336,6 +343,7 @@ function updateDots(){
   });
 }
 
+/* SUPABASE */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
@@ -361,6 +369,15 @@ async function loadData(){
     .from("attendees")
     .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url,qr",{count:"exact"});
 
+  if(sortValue==="newest") query=query.order("created_at",{ascending:false});
+  if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
+  if(sortValue==="name") query=query.order("name",{ascending:true});
+  if(sortValue==="status") query=query.order("status",{ascending:true});
+
+  if(searchValue){
+    query=query.or(`name.ilike.%${searchValue}%,email.ilike.%${searchValue}%,reg_no.ilike.%${searchValue}%,entry_id.ilike.%${searchValue}%`);
+  }
+
   const {data,count}=await query.range(from,to);
   totalRows=count;
   renderTable(data||[]);
@@ -372,6 +389,10 @@ function renderTable(data){
   tbody.innerHTML="";
 
   data.forEach(a=>{
+    const formattedDate=a.created_at
+      ? new Date(a.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})
+      : "-";
+
     const photo=a.id_photo_url
       ? `<img src="${a.id_photo_url}" class="photo-thumb" onclick="openPhoto('${a.id_photo_url}')">`
       : "-";
@@ -385,46 +406,22 @@ function renderTable(data){
         <td>${a.entry_id||"-"}</td>
         <td><span class="badge ${a.status}">${a.status}</span></td>
         <td>${a.created_by||"-"}</td>
-        <td>${a.created_at||"-"}</td>
+        <td>${formattedDate}</td>
         <td>
           <div class="actions">
             <button class="action btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
             <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
             <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-            <button class="action btn-pdf" onclick="downloadPDF('${a.name}','${a.reg_no}','${a.entry_id}','${encodeURIComponent(a.qr)}')">📄</button>
+            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
           </div>
         </td>
       </tr>`;
   });
 }
 
-function downloadPDF(name, regno, entryid, qr){
-  const qrValue = decodeURIComponent(qr);
-  const win = window.open("", "_blank");
-
-  win.document.write(`
-    <html>
-    <head>
-      <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-    </head>
-    <body style="text-align:center;font-family:Arial">
-      <h2>TANTRA 2026</h2>
-      <p>Name: ${name}</p>
-      <p>Reg No: ${regno}</p>
-      <p>Entry ID: ${entryid}</p>
-      <div id="qrcode"></div>
-      <script>
-        new QRCode(document.getElementById("qrcode"), {
-          text: "${qrValue}",
-          width: 150,
-          height: 150
-        });
-        setTimeout(()=>window.print(),1000);
-      </script>
-    </body>
-    </html>
-  `);
+function viewQR(qrValue){
+  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
 }
 
 function renderPagination(){
@@ -432,22 +429,67 @@ function renderPagination(){
   const pagination = document.getElementById("pagination");
   pagination.innerHTML = "";
 
-  for(let i=1;i<=pageCount;i++){
-    const btn=document.createElement("button");
-    btn.innerText=i;
-    btn.className="page-btn";
-    if(i===currentPage) btn.classList.add("active");
-    btn.onclick=()=>{ currentPage=i; loadData(); };
-    pagination.appendChild(btn);
+  if(pageCount <= 1) return;
+
+  const createBtn = (text, page) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "page-btn";
+    if(page === currentPage) btn.classList.add("active");
+    btn.onclick = () => {
+      currentPage = page;
+      loadData();
+    };
+    return btn;
+  };
+
+  if(currentPage > 1){
+    pagination.appendChild(createBtn("«", currentPage - 1));
+  }
+
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(pageCount, currentPage + 2);
+
+  if(start > 1){
+    pagination.appendChild(createBtn(1, 1));
+    if(start > 2) pagination.innerHTML += "<span>...</span>";
+  }
+
+  for(let i=start;i<=end;i++){
+    pagination.appendChild(createBtn(i, i));
+  }
+
+  if(end < pageCount){
+    if(end < pageCount - 1) pagination.innerHTML += "<span>...</span>";
+    pagination.appendChild(createBtn(pageCount, pageCount));
+  }
+
+  if(currentPage < pageCount){
+    pagination.appendChild(createBtn("»", currentPage + 1));
   }
 }
 
 function goToPage(){
-  let page=parseInt(document.getElementById("gotoPage").value);
-  if(page<1) page=1;
-  currentPage=page;
+  const pageCount = Math.ceil(totalRows / rowsPerPage);
+  let page = parseInt(document.getElementById("gotoPage").value);
+
+  if(!page || page < 1) page = 1;
+  if(page > pageCount) page = pageCount;
+
+  currentPage = page;
   loadData();
 }
+
+document.getElementById("searchInput").addEventListener("input",(e)=>{
+  searchValue=e.target.value;
+  currentPage=1;
+  loadData();
+});
+
+document.getElementById("sortSelect").addEventListener("change",(e)=>{
+  sortValue=e.target.value;
+  loadData();
+});
 
 async function updateStatus(id,status){
   await supabaseClient.from("attendees").update({status}).eq("entry_id",id);
