@@ -411,7 +411,7 @@ function renderTable(data){
             <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
             <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
             <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
+            <button class="action btn-qr" onclick="downloadPDF('${a.name}','${a.reg_no}','${a.entry_id}','${encodeURIComponent(a.qr)}')">📄</button>
           </div>
         </td>
       </tr>`;
@@ -465,6 +465,59 @@ function renderPagination(){
   if(currentPage < pageCount){
     pagination.appendChild(createBtn("»", currentPage + 1));
   }
+}
+
+function downloadPDF(name, regno, entryid, qr){
+  const qrValue = decodeURIComponent(qr);
+
+  const printWindow = window.open('', '', 'width=600,height=700');
+
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>TANTRA 2026 Pass</title>
+      <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+      <style>
+        body{
+          font-family: Arial;
+          text-align:center;
+          padding:30px;
+        }
+        .card{
+          border:2px solid black;
+          padding:20px;
+          width:350px;
+          margin:auto;
+        }
+        #qrcode{margin-top:20px}
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h2>TANTRA 2026</h2>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Reg No:</b> ${regno}</p>
+        <p><b>Entry ID:</b> ${entryid}</p>
+        <p><b>Date:</b> March 27, 2026</p>
+        <div id="qrcode"></div>
+      </div>
+
+      <script>
+        new QRCode(document.getElementById("qrcode"), {
+          text: "${qrValue}",
+          width: 150,
+          height: 150
+        });
+
+        setTimeout(function(){
+          window.print();
+        }, 800);
+      </script>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
 }
 
 function goToPage(){
