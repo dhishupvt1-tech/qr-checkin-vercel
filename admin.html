@@ -3,124 +3,251 @@
 <head>
   <title>TANTRA 2026 | Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="authGuard.js"></script>
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#0B1C2D;font-family:Arial;color:white;min-height:100vh}
+
+    body{
+      background:#0B1C2D;
+      font-family:Arial;
+      color:white;
+      min-height:100vh;
+      overflow:hidden;
+    }
+
     .hidden{display:none}
 
-    .lock-overlay{
-      position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
-      background:linear-gradient(135deg,#0B1C2D,#081522);z-index:9999;
+    /* NAVBAR */
+    .navbar{
+      display:flex;
+      justify-content:space-between;
+      padding:16px 25px;
+      background:#11263F;
     }
 
-    .lock-card{
-      width:300px;padding:30px;background:rgba(255,255,255,0.06);
-      backdrop-filter:blur(20px);border-radius:16px;text-align:center;
+    .navbar a{
+      color:#C9A44C;
+      text-decoration:none;
+      margin-left:15px;
+      font-weight:bold;
+      font-size:14px;
     }
 
-    .dots{display:flex;justify-content:center;gap:10px;margin-bottom:20px}
-    .dot{width:14px;height:14px;border-radius:50%;border:2px solid #C9A44C}
-    .dot.filled{background:#C9A44C}
+    .container{
+      padding:20px;
+      max-width:1500px;
+      margin:auto;
+      overflow:auto;
+    }
 
-    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .key{padding:14px;background:#11263F;border-radius:10px;cursor:pointer}
-    .key:hover{background:#C9A44C;color:black}
-
-    .navbar{display:flex;justify-content:space-between;padding:16px 25px;background:#11263F}
-    .navbar a{color:#C9A44C;text-decoration:none;margin-left:15px;font-weight:bold}
-
-    .container{padding:20px;max-width:1500px;margin:auto}
     h2{margin-bottom:15px;color:#C9A44C}
 
-    .top-controls{display:flex;gap:10px;margin-bottom:15px}
-    .top-controls input,.top-controls select{padding:10px;border-radius:6px;border:none}
+    .top-controls{
+      display:flex;
+      gap:10px;
+      margin-bottom:15px;
+    }
 
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th,td{padding:8px;border:1px solid #1e3b5f;text-align:center}
+    .top-controls input{
+      flex:2;
+      padding:10px;
+      border-radius:6px;
+      border:none;
+    }
+
+    .top-controls select{
+      flex:1;
+      padding:10px;
+      border-radius:6px;
+      border:none;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:13px;
+    }
+
+    th,td{
+      padding:8px;
+      border:1px solid #1e3b5f;
+      text-align:center;
+      white-space:nowrap;
+    }
+
     th{background:#11263F;color:#C9A44C}
 
-    .photo-thumb{width:55px;height:55px;object-fit:cover;border-radius:8px;border:2px solid #C9A44C;cursor:pointer}
+    .photo-thumb{
+      width:55px;height:55px;
+      object-fit:cover;
+      border-radius:8px;
+      border:2px solid #C9A44C;
+      cursor:pointer;
+    }
 
-    .badge{padding:4px 8px;border-radius:6px;font-size:11px;font-weight:bold}
+    .badge{
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:11px;
+      font-weight:bold;
+    }
+
     .PENDING{background:#FFC107;color:black}
     .CHECKED_IN{background:#4CAF50}
     .REJECTED{background:#F44336}
 
     .actions{display:flex;justify-content:center;gap:4px}
-    button.action{width:26px;height:26px;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+
+    button.action{
+      width:26px;height:26px;border:none;border-radius:6px;
+      cursor:pointer;font-size:13px;
+      display:flex;align-items:center;justify-content:center;
+    }
+
     .btn-check{background:#4CAF50;color:white}
     .btn-reject{background:#F44336;color:white}
     .btn-pending{background:#FFC107;color:black}
     .btn-delete{background:#555;color:white}
     .btn-qr{background:#C9A44C;color:black}
 
-    .pagination-container{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:15px;flex-wrap:wrap}
-    .page-btn{padding:6px 10px;background:#11263F;border:1px solid #C9A44C;color:#C9A44C;cursor:pointer;border-radius:5px}
-    .page-btn.active{background:#C9A44C;color:black}
-
-    .photo-modal{
-      position:fixed;inset:0;background:rgba(0,0,0,0.85);
-      display:flex;justify-content:center;align-items:center;z-index:9999;display:none;
+    /* PAGINATION */
+    .pagination-container{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:15px;
     }
-    .photo-modal img{max-width:90%;max-height:90%;border-radius:14px;border:4px solid #C9A44C}
+
+    .pagination{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      justify-content:center;
+    }
+
+    .page-btn{
+      padding:6px 10px;
+      background:#11263F;
+      border:1px solid #C9A44C;
+      color:#C9A44C;
+      cursor:pointer;
+      border-radius:5px;
+      min-width:32px;
+    }
+
+    .page-btn.active{
+      background:#C9A44C;
+      color:black;
+      font-weight:bold;
+    }
+
+    .goto-box{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:13px;
+    }
+
+    .goto-box input{
+      width:70px;
+      padding:5px;
+      border-radius:5px;
+      border:none;
+    }
+
+    .goto-box button{
+      padding:5px 10px;
+      background:#C9A44C;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
+    }
+
+    /* PHOTO MODAL */
+    .photo-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:9999;
+      display:none;
+    }
+
+    .photo-modal img{
+      max-width:90%;
+      max-height:90%;
+      border-radius:14px;
+      border:4px solid #C9A44C;
+    }
+
+    @media(max-width:600px){
+      th,td{font-size:11px;padding:6px}
+      .photo-thumb{width:45px;height:45px}
+    }
   </style>
 </head>
 
 <body>
 
-<!-- PIN LOCK -->
-<div class="lock-overlay" id="lockOverlay">
-  <div class="lock-card">
-    <h3>Admin Access</h3>
-    <div class="dots" id="dots"></div>
-    <div class="keypad" id="keypad"></div>
+<div id="mainAdmin">
+
+<nav class="navbar">
+  <div>TANTRA 2026</div>
+  <div>
+    <a href="register.html">Register</a>
+    <a href="scan.html">Scan</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+<h2>Admin Panel</h2>
+
+<div class="top-controls">
+  <input id="searchInput" placeholder="Search name / email / reg no / entry id">
+  <select id="sortSelect">
+    <option value="newest">Newest First</option>
+    <option value="oldest">Oldest First</option>
+    <option value="name">Sort by Name</option>
+    <option value="status">Sort by Status</option>
+  </select>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Photo</th>
+<th>Name</th>
+<th>Email</th>
+<th>Reg No</th>
+<th>Entry ID</th>
+<th>Status</th>
+<th>Created By</th>
+<th>Created At</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<div class="pagination-container">
+  <div class="pagination" id="pagination"></div>
+  <div class="goto-box">
+    <span>Page:</span>
+    <input type="number" id="gotoPage" min="1">
+    <button onclick="goToPage()">Go</button>
   </div>
 </div>
 
-<div id="mainAdmin" class="hidden">
-  <nav class="navbar">
-    <div>TANTRA 2026</div>
-    <div>
-      <a href="register.html">Register</a>
-      <a href="scan.html">Scan</a>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="#" onclick="logout()">Logout</a>
-    </div>
-  </nav>
-
-  <div class="container">
-    <h2>Admin Panel</h2>
-
-    <div class="top-controls">
-      <input id="searchInput" placeholder="Search">
-      <select id="sortSelect">
-        <option value="newest">Newest</option>
-        <option value="oldest">Oldest</option>
-        <option value="name">Name</option>
-        <option value="status">Status</option>
-      </select>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Photo</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Reg No</th>
-          <th>Entry ID</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-
-    <div class="pagination-container" id="pagination"></div>
-  </div>
+</div>
 </div>
 
 <div class="photo-modal" id="photoModal" onclick="closePhoto()">
@@ -128,54 +255,6 @@
 </div>
 
 <script>
-const ACCESS_CODE="528494";
-let enteredPin="";
-
-const dots=document.getElementById("dots");
-const keypad=document.getElementById("keypad");
-
-for(let i=0;i<6;i++){
-  const d=document.createElement("div");
-  d.className="dot";
-  dots.appendChild(d);
-}
-
-for(let i=1;i<=9;i++) addKey(i);
-addKey("0");
-addKey("←");
-
-function addKey(val){
-  const key=document.createElement("div");
-  key.className="key";
-  key.innerText=val;
-  key.onclick=()=>pressKey(val);
-  keypad.appendChild(key);
-}
-
-function pressKey(val){
-  if(val==="←") enteredPin=enteredPin.slice(0,-1);
-  else if(enteredPin.length<6) enteredPin+=val;
-  updateDots();
-
-  if(enteredPin.length===6){
-    if(enteredPin===ACCESS_CODE){
-      document.getElementById("lockOverlay").style.display="none";
-      document.getElementById("mainAdmin").classList.remove("hidden");
-      loadData();
-    }else{
-      enteredPin="";
-      updateDots();
-    }
-  }
-}
-
-function updateDots(){
-  document.querySelectorAll(".dot").forEach((d,i)=>{
-    d.classList.toggle("filled",i<enteredPin.length);
-  });
-}
-
-/* SUPABASE */
 const supabaseClient = supabase.createClient(
   "https://qwumwbmystwwhsjpllqn.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3dW13Ym15c3R3d2hzanBsbHFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0OTg0OTUsImV4cCI6MjA4NjA3NDQ5NX0.Pd9xovSIz0GwsZXBj1w79fe9HfsRCv1ZtWbkJ-Umh8M"
@@ -184,18 +263,35 @@ const supabaseClient = supabase.createClient(
 let currentPage=1;
 const rowsPerPage=50;
 let totalRows=0;
+let searchValue="";
+let sortValue="newest";
+
+(async()=>{
+  const user=await requireAuth(supabaseClient);
+  if(!user)return;
+  loadData();
+})();
 
 async function loadData(){
   const from=(currentPage-1)*rowsPerPage;
   const to=from+rowsPerPage-1;
 
-  const {data,count}=await supabaseClient
+  let query=supabaseClient
     .from("attendees")
-    .select("*",{count:"exact"})
-    .range(from,to);
+    .select("name,email,reg_no,entry_id,status,created_by,created_at,id_photo_url,qr",{count:"exact"});
 
+  if(sortValue==="newest") query=query.order("created_at",{ascending:false});
+  if(sortValue==="oldest") query=query.order("created_at",{ascending:true});
+  if(sortValue==="name") query=query.order("name",{ascending:true});
+  if(sortValue==="status") query=query.order("status",{ascending:true});
+
+  if(searchValue){
+    query=query.or(`name.ilike.%${searchValue}%,email.ilike.%${searchValue}%,reg_no.ilike.%${searchValue}%,entry_id.ilike.%${searchValue}%`);
+  }
+
+  const {data,count}=await query.range(from,to);
   totalRows=count;
-  renderTable(data);
+  renderTable(data||[]);
   renderPagination();
 }
 
@@ -204,38 +300,91 @@ function renderTable(data){
   tbody.innerHTML="";
 
   data.forEach(a=>{
+    const formattedDate=a.created_at
+      ? new Date(a.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})
+      : "-";
+
+    const photo=a.id_photo_url
+      ? `<img src="${a.id_photo_url}" class="photo-thumb" onclick="openPhoto('${a.id_photo_url}')">`
+      : "-";
+
     tbody.innerHTML+=`
-    <tr>
-      <td>${a.id_photo_url ? `<img src="${a.id_photo_url}" class="photo-thumb" onclick="openPhoto('${a.id_photo_url}')">` : "-"}</td>
-      <td>${a.name}</td>
-      <td>${a.email}</td>
-      <td>${a.reg_no}</td>
-      <td>${a.entry_id}</td>
-      <td><span class="badge ${a.status}">${a.status}</span></td>
-      <td class="actions">
-        <button class="action btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
-        <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
-        <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
-        <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
-        <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
-      </td>
-    </tr>`;
+      <tr>
+        <td>${photo}</td>
+        <td>${a.name||"-"}</td>
+        <td>${a.email||"-"}</td>
+        <td>${a.reg_no||"-"}</td>
+        <td>${a.entry_id||"-"}</td>
+        <td><span class="badge ${a.status}">${a.status}</span></td>
+        <td>${a.created_by||"-"}</td>
+        <td>${formattedDate}</td>
+        <td>
+          <div class="actions">
+            <button class="action btn-check" onclick="updateStatus('${a.entry_id}','CHECKED_IN')">✔</button>
+            <button class="action btn-reject" onclick="updateStatus('${a.entry_id}','REJECTED')">✖</button>
+            <button class="action btn-pending" onclick="updateStatus('${a.entry_id}','PENDING')">⏳</button>
+            <button class="action btn-delete" onclick="deleteUser('${a.entry_id}')">🗑</button>
+            <button class="action btn-qr" onclick="viewQR('${encodeURIComponent(a.qr)}')">🔳</button>
+          </div>
+        </td>
+      </tr>`;
   });
 }
 
 function renderPagination(){
-  const pageCount=Math.ceil(totalRows/rowsPerPage);
-  const pagination=document.getElementById("pagination");
-  pagination.innerHTML="";
+  const pageCount = Math.ceil(totalRows / rowsPerPage);
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
 
-  for(let i=1;i<=pageCount;i++){
-    const btn=document.createElement("button");
-    btn.innerText=i;
-    btn.className="page-btn";
-    if(i===currentPage) btn.classList.add("active");
-    btn.onclick=()=>{currentPage=i;loadData();}
-    pagination.appendChild(btn);
+  if(pageCount <= 1) return;
+
+  const createBtn = (text, page) => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.className = "page-btn";
+    if(page === currentPage) btn.classList.add("active");
+    btn.onclick = () => {
+      currentPage = page;
+      loadData();
+    };
+    return btn;
+  };
+
+  if(currentPage > 1){
+    pagination.appendChild(createBtn("«", currentPage - 1));
   }
+
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(pageCount, currentPage + 2);
+
+  if(start > 1){
+    pagination.appendChild(createBtn(1, 1));
+    if(start > 2) pagination.innerHTML += "<span>...</span>";
+  }
+
+  for(let i=start;i<=end;i++){
+    pagination.appendChild(createBtn(i, i));
+  }
+
+  if(end < pageCount){
+    if(end < pageCount - 1) pagination.innerHTML += "<span>...</span>";
+    pagination.appendChild(createBtn(pageCount, pageCount));
+  }
+
+  if(currentPage < pageCount){
+    pagination.appendChild(createBtn("»", currentPage + 1));
+  }
+}
+
+function goToPage(){
+  const pageCount = Math.ceil(totalRows / rowsPerPage);
+  let page = parseInt(document.getElementById("gotoPage").value);
+
+  if(!page || page < 1) page = 1;
+  if(page > pageCount) page = pageCount;
+
+  currentPage = page;
+  loadData();
 }
 
 async function updateStatus(id,status){
@@ -244,13 +393,13 @@ async function updateStatus(id,status){
 }
 
 async function deleteUser(id){
-  if(!confirm("Delete?")) return;
+  if(!confirm("Delete this attendee?"))return;
   await supabaseClient.from("attendees").delete().eq("entry_id",id);
   loadData();
 }
 
-function viewQR(qr){
-  window.open("view-qr.html?qr="+qr,"_blank");
+function viewQR(qrValue){
+  window.open(`view-qr.html?qr=${qrValue}`,"_blank");
 }
 
 function openPhoto(url){
@@ -261,6 +410,17 @@ function openPhoto(url){
 function closePhoto(){
   document.getElementById("photoModal").style.display="none";
 }
+
+document.getElementById("searchInput").addEventListener("input",(e)=>{
+  searchValue=e.target.value;
+  currentPage=1;
+  loadData();
+});
+
+document.getElementById("sortSelect").addEventListener("change",(e)=>{
+  sortValue=e.target.value;
+  loadData();
+});
 
 async function logout(){
   await supabaseClient.auth.signOut();
